@@ -57,6 +57,11 @@ python verificar_secretos.py  # 4. revisa que las llaves no queden expuestas
 | `.env.example` | Plantilla de variables sin valores reales |
 | `.gitignore` | Excluye `.env`, `*.db`, `__pycache__/` y `.venv/` del repositorio |
 | `evidencia/` | Salida de cada script y capturas usadas en el informe |
+| `docs/` | PDF de los entregables: cuadro del Item I e informe del Item II |
+
+## Entregables
+- [`docs/Actividad2_Item1_NortiShop.pdf`](docs/Actividad2_Item1_NortiShop.pdf) – Item I: cuadro de protección de datos personales y financieros.
+- [`docs/Actividad2_Item2_NortiShop.pdf`](docs/Actividad2_Item2_NortiShop.pdf) – Item II: implementación, evidencia y explicación de cómo se recupera o valida cada dato.
 
 ## Evidencia
 | Archivo | Figura del informe (Item II) | Qué muestra |
