@@ -1,51 +1,60 @@
 $ ls -la
-total 132
--rw------- 1 m1lvn m1lvn   168 Oct  1 21:34 .env
--rw-r--r-- 1 m1lvn m1lvn   215 Oct  1 20:28 .env.example
--rw-r--r-- 1 m1lvn m1lvn    64 Oct  1 20:28 .gitignore
--rw-r--r-- 1 m1lvn m1lvn  1323 Oct  1 20:31 README.md
-drwxrwxr-x 2 m1lvn m1lvn  4096 Oct  1 21:34 __pycache__
--rw-r--r-- 1 m1lvn m1lvn  1010 Oct  1 20:28 config.py
--rw-r--r-- 1 m1lvn m1lvn  2619 Oct  1 20:28 cripto.py
--rw-r--r-- 1 m1lvn m1lvn  2341 Oct  1 20:28 db.py
--rw-r--r-- 1 m1lvn m1lvn  5422 Oct  1 20:30 demo.py
-drwxr-xr-x 2 m1lvn m1lvn  4096 Oct  1 20:31 evidencia
--rw-r--r-- 1 m1lvn m1lvn   836 Oct  1 20:28 generar_llaves.py
--rw-r--r-- 1 m1lvn m1lvn 45056 Oct  1 21:34 nortishop.db
--rw-r--r-- 1 m1lvn m1lvn  6371 Oct  1 20:28 nortishop.py
--rw-r--r-- 1 m1lvn m1lvn  1646 Oct  1 20:28 pasarela_simulada.py
+total 148
+drwxr-xr-x 5 m1lvn m1lvn  4096 Oct  1 22:01 .
+drwxrwxr-x 4 m1lvn m1lvn  4096 Oct  1 21:55 ..
+-rw------- 1 m1lvn m1lvn   241 Oct  1 21:50 .env
+-rw-r--r-- 1 m1lvn m1lvn   264 Oct  1 21:49 .env.example
+drwxrwxr-x 7 m1lvn m1lvn  4096 Oct  1 22:10 .git
+-rw-r--r-- 1 m1lvn m1lvn    71 Oct  1 21:48 .gitignore
+-rw-r--r-- 1 m1lvn m1lvn  4709 Oct  1 21:54 README.md
+drwxrwxr-x 2 m1lvn m1lvn  4096 Oct  1 21:54 __pycache__
+-rw-r--r-- 1 m1lvn m1lvn  2070 Oct  1 21:49 config.py
+-rw-r--r-- 1 m1lvn m1lvn  4099 Oct  1 21:49 cripto.py
+-rw-r--r-- 1 m1lvn m1lvn  2529 Oct  1 21:54 db.py
+-rw-r--r-- 1 m1lvn m1lvn  7320 Oct  1 21:54 demo.py
+drwxr-xr-x 2 m1lvn m1lvn  4096 Oct  1 22:10 evidencia
+-rw-r--r-- 1 m1lvn m1lvn   948 Oct  1 21:50 generar_llaves.py
+-rw-r--r-- 1 m1lvn m1lvn 49152 Oct  1 22:01 nortishop.db
+-rw-r--r-- 1 m1lvn m1lvn  9125 Oct  1 21:54 nortishop.py
+-rw-r--r-- 1 m1lvn m1lvn  2084 Oct  1 21:49 pasarela_simulada.py
 -rw-r--r-- 1 m1lvn m1lvn    50 Oct  1 20:29 requirements.txt
--rw-r--r-- 1 m1lvn m1lvn   718 Oct  1 20:29 ver_bd.py
--rw-r--r-- 1 m1lvn m1lvn  2210 Oct  1 20:29 verificar_secretos.py
+-rw-r--r-- 1 m1lvn m1lvn   738 Oct  1 21:50 ver_bd.py
+-rw-r--r-- 1 m1lvn m1lvn  2474 Oct  1 21:54 verificar_secretos.py
 
 $ cat .env.example
 # Copia de ejemplo SIN llaves reales. Ejecutar generar_llaves.py para crear el .env verdadero.
-NORTISHOP_LLAVE_CIFRADO=<32 bytes en base64>
+NORTISHOP_LLAVE_CIFRADO_V1=<32 bytes en base64>
 NORTISHOP_LLAVE_INDICE=<32 bytes en base64>
+NORTISHOP_LLAVE_PASARELA=<32 bytes en base64>
 NORTISHOP_RUTA_BD=nortishop.db
 
-$ git status --short     # archivos que se subirán al repositorio
-A  .env.example
-A  .gitignore
-A  README.md
-A  config.py
-A  cripto.py
-A  db.py
-A  demo.py
-A  evidencia/ev_bd.txt
-A  evidencia/ev_demo.txt
-A  evidencia/ev_secretos.txt
-A  generar_llaves.py
-A  nortishop.py
-A  pasarela_simulada.py
-A  requirements.txt
-A  ver_bd.py
-A  verificar_secretos.py
-?? evidencia/ev_git.txt
+$ git ls-files   # lo que está en el repositorio
+.env.example
+.gitignore
+README.md
+config.py
+cripto.py
+db.py
+demo.py
+evidencia/cap_bd_1.png
+evidencia/cap_bd_2.png
+evidencia/cap_demo_1.png
+evidencia/cap_demo_2.png
+evidencia/cap_secretos.png
+evidencia/ev_bd.txt
+evidencia/ev_demo.txt
+evidencia/ev_git.txt
+evidencia/ev_secretos.txt
+generar_llaves.py
+nortishop.py
+pasarela_simulada.py
+requirements.txt
+ver_bd.py
+verificar_secretos.py
 
 $ git check-ignore -v .env nortishop.db
 .gitignore:2:.env	.env
 .gitignore:3:*.db	nortishop.db
 
-$ grep -rlF "$(grep LLAVE_CIFRADO .env | cut -d= -f2-)" *.py .env.example README.md   # ¿la llave aparece en el código?
-(sin resultados: la llave no está en el código)
+$ grep -rlF "<llave real del .env>" *.py .env.example README.md evidencia/*.txt
+(sin resultados: la llave no aparece en el código, README ni evidencia)
