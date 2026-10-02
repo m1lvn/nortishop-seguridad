@@ -1,10 +1,6 @@
-$ python3 generar_llaves.py
-.env creado con llaves nuevas (permisos 600).
-
-$ python3 demo.py
 
 ======================================================================
-1. REGISTRO DE CLIENTE (correo cifrado, contraseña hasheada, RUT y dirección cifrados)
+1. REGISTRO DE CLIENTE (correo, RUT, teléfono y dirección cifrados; contraseña hasheada)
 ======================================================================
 Cliente registrado con id 1
 
@@ -23,22 +19,25 @@ Login admin con clave incorrecta   -> RECHAZADO
   nombre    : Camila Rojas
   correo    : camila.rojas@correo.cl
   rut       : 12.345.678-5
+  telefono  : +56 9 1234 5678
   direccion : Av. Los Leones 1234, Providencia
 
 ======================================================================
-4. TOKENIZACIÓN DE TARJETAS (la tarjeta va a la pasarela, NortiShop guarda el token)
+4. TOKENIZACIÓN DE TARJETAS Y PAGO CON RESPUESTA FIRMADA
 ======================================================================
-Tarjeta guardada del cliente -> token: tok_82201347aa3e99d5a115057b
-Compra con tarjeta guardada      -> APROBADO, monto $51970, autorización 902D409D
-Compra como invitado             -> APROBADO, monto $14990, autorización 94A183B9
+Tarjeta guardada del cliente -> token: tok_4052b0710ffeab0bfa06a165
+Compra con tarjeta guardada      -> APROBADO, pedido NS-9A7AE71410BC, monto $51970, autorización CA98EEB6
+Compra como invitado             -> APROBADO, pedido NS-12ECDEC7D701, monto $14990, autorización 3E66CA58
+Firma de la pasarela verificada antes de registrar cada pedido (HMAC-SHA256)
 
 ======================================================================
-5. HISTORIAL DE COMPRAS Y DATOS DEL INVITADO (se descifran al consultar)
+5. HISTORIAL, DATOS DEL INVITADO Y DESPACHO (se descifran al consultar)
 ======================================================================
-  Pedido 1 - total $51970 - pagado con **** 1111
+  Pedido NS-9A7AE71410BC - total $51970 - pagado con **** 1111
      1 x Audífonos Bluetooth ($39990)
      2 x Cable USB-C ($5990)
   Contacto invitado pedido 2: {'correo': 'invitado.perez@mail.com', 'telefono': '+56 9 8765 4321'}
+  Dirección de despacho pedido 2: Calle Prat 456, Valparaíso
 
 ======================================================================
 6. MARKETING: BOLETÍN Y COMPORTAMIENTO DE COMPRA (cifrados)
@@ -56,10 +55,15 @@ Comportamiento de compra descifrado:
 7. PRUEBAS DE SEGURIDAD
 ======================================================================
 Mismo correo cifrado dos veces da resultados distintos: True
-   ALHaldCZa6Fhr2P5rv50j4m5uiVyWn9AHm+KRVmJosgkwxoPtO ...
-   dKkbIFe2FR/bYRrwcvx+jij2HnQ1RwPEm4KChqIaShs5K1xQiR ...
-Dato alterado en la BD  -> InvalidTag: el sistema rechaza el dato modificado
-Llave incorrecta        -> InvalidTag: sin la llave del .env no se recupera nada
+   v1:tu75YmLK1NfJKvQY2NajxO80sSddKCGHsJt6QGk2lT0+ja2 ...
+   v1:hjIwRaxFT/RVUD9tw9ZNSRTsZzXyLSdzFc9CT2if/8Hl/2W ...
+El prefijo 'v1:' indica la versión de la llave usada (permite rotar llaves)
+Dato alterado en la BD                  -> InvalidTag: el sistema rechaza el dato modificado
+Llave incorrecta                        -> InvalidTag: sin la llave del .env no se recupera nada
+Dirección copiada a otro pedido         -> InvalidTag: el contexto no coincide, no se despacha a otra dirección
+Pago 'rechazado' cambiado a 'aprobado'  -> RECHAZADO (la firma ya no coincide)
+Pago de $990 reutilizado en otro pedido -> RECHAZADO (no corresponde al pedido ni al monto)
+Pago auténtico para su propio pedido    -> ACEPTADO
 
 Tarjeta mostrada en pantalla enmascarada: ************1111
 
