@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     rut_cifrado         TEXT,
     telefono_cifrado    TEXT,
     direccion_cifrado   TEXT,
-    nortipuntos         INTEGER DEFAULT 0
+    nortipuntos         INTEGER DEFAULT 0   -- no es dato personal: su riesgo es de integridad
 );
 
 CREATE TABLE IF NOT EXISTS tarjetas_guardadas (

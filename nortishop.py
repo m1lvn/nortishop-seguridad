@@ -148,7 +148,7 @@ def comprar_como_invitado(pasarela, correo, telefono, direccion, numero, vencimi
 
 def historial_compras(cliente_id):
     con = conectar()
-    filas = con.execute("SELECT id, codigo, detalle_cifrado, monto, ultimos4 FROM pedidos WHERE cliente_id=?",
+    filas = con.execute("SELECT codigo, detalle_cifrado, monto, ultimos4 FROM pedidos WHERE cliente_id=?",
                         (cliente_id,)).fetchall()
     con.close()
     return [{"pedido": f["codigo"], "productos": descifrar_json(f["detalle_cifrado"], _ctx_pedido("detalle", f["codigo"])),

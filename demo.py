@@ -109,7 +109,7 @@ try:
     descifrar(version + ":" + base64.b64encode(bytes(datos_mod)).decode(), ctx)
     print("Dato alterado: se descifró (ESTO NO DEBERÍA PASAR)")
 except InvalidTag:
-    print("Dato alterado en la BD      -> InvalidTag: el sistema rechaza el dato modificado")
+    print("Dato alterado en la BD                  -> InvalidTag: el sistema rechaza el dato modificado")
 
 # b) sin la llave correcta no se puede descifrar
 raw = base64.b64decode(b64)
@@ -117,7 +117,7 @@ try:
     AESGCM(os.urandom(32)).decrypt(raw[:12], raw[12:], ctx.encode())
     print("Llave incorrecta: se descifró (ESTO NO DEBERÍA PASAR)")
 except InvalidTag:
-    print("Llave incorrecta            -> InvalidTag: sin la llave del .env no se recupera nada")
+    print("Llave incorrecta                        -> InvalidTag: sin la llave del .env no se recupera nada")
 
 # c) un valor cifrado no se puede mover a otra fila (contexto AAD)
 con = conectar()
@@ -128,7 +128,7 @@ try:
     ns.direccion_despacho(2)
     print("Dato movido de fila: se descifró (ESTO NO DEBERÍA PASAR)")
 except InvalidTag:
-    print("Dirección copiada a otro pedido -> InvalidTag: el contexto no coincide, no se despacha a otra dirección")
+    print("Dirección copiada a otro pedido         -> InvalidTag: el contexto no coincide, no se despacha a otra dirección")
 con.execute("UPDATE pedidos SET direccion_cifrado = ? WHERE id=2", (original,))
 con.commit()
 con.close()
@@ -136,12 +136,12 @@ con.close()
 # d) una respuesta de pago falsificada o reutilizada no se acepta
 rechazo = pasarela.cobrar("tok_inexistente", 9990, "NS-PRUEBA")
 falsa = dict(rechazo, aprobado=True, codigo="APROBADO")
-print("Respuesta 'rechazado' cambiada a 'aprobado'   ->",
+print("Pago 'rechazado' cambiado a 'aprobado'  ->",
       r(ns.verificar_respuesta_pago(falsa, 9990, "NS-PRUEBA")), "(la firma ya no coincide)")
 real = pasarela.cobrar(token, 990, "NS-BARATO")
-print("Respuesta de un pago de $990 usada en otro pedido ->",
+print("Pago de $990 reutilizado en otro pedido ->",
       r(ns.verificar_respuesta_pago(real, 51970, "NS-CARO")), "(no corresponde al pedido ni al monto)")
-print("Respuesta auténtica para su propio pedido      ->",
+print("Pago auténtico para su propio pedido    ->",
       r(ns.verificar_respuesta_pago(real, 990, "NS-BARATO")))
 
 print("\nTarjeta mostrada en pantalla enmascarada:", enmascarar("4111111111111111"))
