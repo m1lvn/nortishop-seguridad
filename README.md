@@ -72,6 +72,7 @@ python verificar_secretos.py  # 4. revisa que las llaves no queden expuestas
 | `evidencia/ev_bd.txt`, `cap_bd_2.png` | Figura 4 | Tablas `administradores`, `boletin_suscriptores` y `comportamiento_compra` en crudo |
 | `evidencia/ev_secretos.txt`, `cap_secretos.png` | Figura 5 | Resultado de `verificar_secretos.py` |
 | `evidencia/ev_git.txt`, `cap_git.png` | Figura 6 | `.env` y la BD fuera del repositorio |
+| `evidencia/cap_repo.png` | Figura 7 | Repositorio público en GitHub, sin `.env` ni la BD |
 
 El archivo `.env` y la base de datos `nortishop.db` NO se incluyen en el repositorio.
 Todos los datos de la demo son ficticios.
