@@ -1,7 +1,7 @@
 # db.py
 # Estructura de la base de datos (SQLite).
 # Los nombres de columna indican cómo está protegido cada campo:
-#   *_cifrado  -> AES-256-GCM
+#   *_cifrado  -> AES-256-GCM (con contexto tabla.columna:identificador de la fila)
 #   *_hash     -> bcrypt
 #   *_indice   -> HMAC (solo para buscar)
 #   token_*    -> token de la pasarela
@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     correo_indice       TEXT NOT NULL UNIQUE,
     password_hash       TEXT NOT NULL,
     rut_cifrado         TEXT,
+    telefono_cifrado    TEXT,
     direccion_cifrado   TEXT,
     nortipuntos         INTEGER DEFAULT 0
 );
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS tarjetas_guardadas (
 
 CREATE TABLE IF NOT EXISTS pedidos (
     id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo                   TEXT NOT NULL UNIQUE,
     cliente_id               INTEGER REFERENCES clientes(id),
     es_invitado              INTEGER DEFAULT 0,
     invitado_correo_cifrado  TEXT,

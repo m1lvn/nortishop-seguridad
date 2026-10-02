@@ -22,6 +22,7 @@ def check(descripcion, ok):
 
 env = dotenv_values(".env")
 llaves = {k: v for k, v in env.items() if "LLAVE" in k}
+ruta_bd = env.get("NORTISHOP_RUTA_BD", "nortishop.db")
 
 # 1
 with open(".gitignore") as f:
@@ -43,7 +44,7 @@ for nombre, valor in llaves.items():
     check(f"{nombre} no aparece en ningún archivo de código ({len(archivos_codigo)} revisados)", not encontrado)
 
 # 4
-bd = open("nortishop.db", "rb").read()
+bd = open(ruta_bd, "rb").read()
 for nombre, valor in llaves.items():
     crudo = base64.b64decode(valor)
     check(f"{nombre} no aparece dentro de la base de datos", valor.encode() not in bd and crudo not in bd)
@@ -51,7 +52,7 @@ for nombre, valor in llaves.items():
 # 5
 datos_sensibles = ["4111111111111111", "5555444433332222", "12.345.678-5", "camila.rojas@correo.cl",
                    "Los Leones", "MiClave#2026", "Adm!nPanel2026", "invitado.perez@mail.com",
-                   "8765 4321", "Audífonos", "juan.soto@gmail.com", "ticket_promedio"]
+                   "8765 4321", "1234 5678", "Calle Prat", "Audífonos", "juan.soto@gmail.com", "ticket_promedio"]
 en_claro = [d for d in datos_sensibles if d.encode() in bd]
 check(f"Ningún dato sensible en texto plano en la BD ({len(datos_sensibles)} valores buscados)", not en_claro)
 if en_claro:

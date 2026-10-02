@@ -3,8 +3,9 @@
 # o un administrador de BD sin acceso a las llaves.
 
 import sqlite3
+from config import RUTA_BD
 
-con = sqlite3.connect("nortishop.db")
+con = sqlite3.connect(RUTA_BD)
 con.row_factory = sqlite3.Row
 
 TABLAS = ["clientes", "tarjetas_guardadas", "pedidos", "administradores",

@@ -3,14 +3,19 @@
 # En la vida real esto es un servicio de un tercero: NortiShop le manda la
 # tarjeta UNA vez y recibe de vuelta un token. El número real queda guardado
 # solo en la bóveda de la pasarela, nunca en la base de datos de NortiShop.
+# Cada respuesta de cobro va firmada con un secreto compartido con el comercio,
+# para que NortiShop pueda comprobar que la respuesta es auténtica.
 
 import secrets
 
+from cripto import firmar_respuesta
+
 
 class PasarelaPago:
-    def __init__(self):
+    def __init__(self, llave_firma):
         # "bóveda" de la pasarela: vive fuera de NortiShop (aquí, solo en memoria)
         self._boveda = {}
+        self._llave_firma = llave_firma
 
     def tokenizar(self, numero_tarjeta, vencimiento, cvv):
         """Recibe la tarjeta y devuelve un token + los últimos 4 dígitos."""
@@ -22,11 +27,15 @@ class PasarelaPago:
         self._boveda[token] = {"numero": numero, "vencimiento": vencimiento}
         return {"token": token, "ultimos4": numero[-4:], "marca": self._marca(numero)}
 
-    def cobrar(self, token, monto):
+    def cobrar(self, token, monto, orden):
         """Cobra usando el token. NortiShop nunca necesita el número real."""
         if token not in self._boveda:
-            return {"aprobado": False, "codigo": "TOKEN_INVALIDO"}
-        return {"aprobado": True, "codigo": "APROBADO", "autorizacion": secrets.token_hex(4).upper(), "monto": monto}
+            resp = {"orden": orden, "aprobado": False, "codigo": "TOKEN_INVALIDO", "autorizacion": "", "monto": monto}
+        else:
+            resp = {"orden": orden, "aprobado": True, "codigo": "APROBADO",
+                    "autorizacion": secrets.token_hex(4).upper(), "monto": monto}
+        resp["firma"] = firmar_respuesta(self._llave_firma, resp)
+        return resp
 
     @staticmethod
     def _marca(numero):
