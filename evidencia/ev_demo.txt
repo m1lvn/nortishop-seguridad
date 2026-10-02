@@ -1,0 +1,66 @@
+$ python3 generar_llaves.py
+.env creado con llaves nuevas (permisos 600).
+
+$ python3 demo.py
+
+======================================================================
+1. REGISTRO DE CLIENTE (correo cifrado, contraseña hasheada, RUT y dirección cifrados)
+======================================================================
+Cliente registrado con id 1
+
+======================================================================
+2. VALIDACIÓN DE CONTRASEÑAS (hashing bcrypt: se compara, no se recupera)
+======================================================================
+Login cliente con clave correcta   -> ACEPTADO
+Login cliente con clave incorrecta -> RECHAZADO
+Login con correo en MAYÚSCULAS     -> ACEPTADO (el índice HMAC normaliza el correo)
+Login admin con clave correcta     -> ACEPTADO
+Login admin con clave incorrecta   -> RECHAZADO
+
+======================================================================
+3. RECUPERACIÓN DE DATOS CIFRADOS (AES-256-GCM, solo con la llave)
+======================================================================
+  nombre    : Camila Rojas
+  correo    : camila.rojas@correo.cl
+  rut       : 12.345.678-5
+  direccion : Av. Los Leones 1234, Providencia
+
+======================================================================
+4. TOKENIZACIÓN DE TARJETAS (la tarjeta va a la pasarela, NortiShop guarda el token)
+======================================================================
+Tarjeta guardada del cliente -> token: tok_82201347aa3e99d5a115057b
+Compra con tarjeta guardada      -> APROBADO, monto $51970, autorización 902D409D
+Compra como invitado             -> APROBADO, monto $14990, autorización 94A183B9
+
+======================================================================
+5. HISTORIAL DE COMPRAS Y DATOS DEL INVITADO (se descifran al consultar)
+======================================================================
+  Pedido 1 - total $51970 - pagado con **** 1111
+     1 x Audífonos Bluetooth ($39990)
+     2 x Cable USB-C ($5990)
+  Contacto invitado pedido 2: {'correo': 'invitado.perez@mail.com', 'telefono': '+56 9 8765 4321'}
+
+======================================================================
+6. MARKETING: BOLETÍN Y COMPORTAMIENTO DE COMPRA (cifrados)
+======================================================================
+Correos descifrados solo al momento de enviar el boletín:
+    camila.rojas@correo.cl
+    juan.soto@gmail.com
+    maria.diaz@outlook.com
+Comportamiento de compra descifrado:
+    categorias_favoritas: ['audio', 'accesorios']
+    compras_ultimo_anio: 7
+    ticket_promedio: 32500
+
+======================================================================
+7. PRUEBAS DE SEGURIDAD
+======================================================================
+Mismo correo cifrado dos veces da resultados distintos: True
+   ALHaldCZa6Fhr2P5rv50j4m5uiVyWn9AHm+KRVmJosgkwxoPtO ...
+   dKkbIFe2FR/bYRrwcvx+jij2HnQ1RwPEm4KChqIaShs5K1xQiR ...
+Dato alterado en la BD  -> InvalidTag: el sistema rechaza el dato modificado
+Llave incorrecta        -> InvalidTag: sin la llave del .env no se recupera nada
+
+Tarjeta mostrada en pantalla enmascarada: ************1111
+
+Demo terminada.

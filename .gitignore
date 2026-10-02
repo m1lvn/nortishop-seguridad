@@ -1,0 +1,4 @@
+# secretos y datos: nunca al repositorio
+.env
+*.db
+__pycache__/
