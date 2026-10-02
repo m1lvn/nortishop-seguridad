@@ -1,5 +1,5 @@
 # nortishop.py
-# Funciones del sistema que guardan y leen los datos sensibles ya protegidos.
+# Funciones del sistema que guardan y leen los datos personales y financieros ya protegidos.
 #
 # Cada valor cifrado lleva un contexto "tabla.columna:identificador" que lo amarra
 # a su fila. El identificador es uno que no cambia y se conoce antes del INSERT:
