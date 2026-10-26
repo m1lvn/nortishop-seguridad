@@ -9,7 +9,7 @@ con = sqlite3.connect(RUTA_BD)
 con.row_factory = sqlite3.Row
 
 TABLAS = ["clientes", "tarjetas_guardadas", "pedidos", "administradores",
-          "boletin_suscriptores", "comportamiento_compra"]
+          "boletin_suscriptores", "comportamiento_compra", "auditoria"]
 
 
 def corto(v, n=48):
