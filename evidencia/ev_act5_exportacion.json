@@ -1,0 +1,74 @@
+{
+  "formato": "nortishop-export/1.0",
+  "generado": "2026-10-28 04:30:54",
+  "solicitud": "SD-EB8EAD8BEE",
+  "cuenta": {
+    "nombre": "Ana Prueba",
+    "correo": "ana@prueba.cl",
+    "telefono": "+56 9 1111 2222",
+    "direccion": "Av. Los Leones 1234, Providencia",
+    "nortipuntos": 0,
+    "mayoria_edad_declarada": "2026-10-28 04:30:52"
+  },
+  "tarjetas": [
+    {
+      "marca": "VISA",
+      "terminacion": "1111"
+    }
+  ],
+  "pedidos": [
+    {
+      "codigo": "NS-E7152AFFE428",
+      "fecha": "2026-10-28 04:30:53",
+      "estado": "pagado",
+      "monto": 39990,
+      "tarjeta": "**** 1111",
+      "region": "Metropolitana de Santiago",
+      "direccion": "Av. Los Leones 1234, Providencia",
+      "productos": [
+        {
+          "producto": "Audífonos Bluetooth",
+          "cantidad": 1,
+          "precio": 39990
+        }
+      ]
+    }
+  ],
+  "consentimientos": [
+    {
+      "finalidad": "boletin",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-10-28 04:30:52",
+      "canal": "web"
+    },
+    {
+      "finalidad": "analitica_comportamiento",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-10-28 04:30:53",
+      "canal": "web"
+    },
+    {
+      "finalidad": "analitica_comportamiento",
+      "version": 1,
+      "accion": "revocado",
+      "fecha": "2026-10-28 04:30:53",
+      "canal": "web"
+    },
+    {
+      "finalidad": "boletin",
+      "version": 1,
+      "accion": "revocado",
+      "fecha": "2026-10-28 04:30:53",
+      "canal": "web"
+    },
+    {
+      "finalidad": "boletin",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-10-28 04:30:53",
+      "canal": "web"
+    }
+  ]
+}

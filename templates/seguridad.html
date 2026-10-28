@@ -51,8 +51,8 @@
 </form>
 
 <h2>Últimos eventos de auditoría</h2>
-<p>Solo lectura. Esta consulta también queda registrada.</p>
-<div class="tabla"><table>
+<p>Últimos 15 eventos, solo lectura. Esta consulta también queda registrada (la bitácora completa está en la API <span class="mono">/api/v1/auditoria</span>).</p>
+<div class="tabla"><table class="compacta">
   <tr><th>#</th><th>Fecha</th><th>Actor</th><th>Rol</th><th>Operación</th><th>Categoría</th><th>Recurso</th><th>Resultado</th><th>Canal</th><th>Origen</th><th>Detalle</th></tr>
   {% for e in eventos|reverse %}
   <tr><td>{{ e.id }}</td><td>{{ e.fecha }}</td><td>{{ e.actor_tipo or "—" }}{% if e.actor_id %}:{{ e.actor_id }}{% endif %}</td><td>{{ e.rol or "—" }}</td>

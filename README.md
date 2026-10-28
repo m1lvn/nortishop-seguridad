@@ -101,7 +101,8 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 
 ## Evidencia
 - `ev_demo.txt`, `ev_bd.txt`, `ev_secretos.txt`, `ev_git.txt` y `cap_*.png` (sin `act5`): figuras del informe de la Actividad 2.
-- `ev_act5_*.txt` y `ev_act5_*.json`: salida de `evidencia_act5.py` (operaciones reales de prueba, eventos de auditoría, alertas, incidente).
+- `ev_act5_*.txt` y `ev_act5_exportacion.json`: salida de `evidencia_act5.py` (consentimiento, derechos, detección e incidente, intentos de elusión y auditoría).
+- `ev_act5_pruebas.txt`: ejecución de las 73 pruebas (`-v`). `ev_act5_exportacion_web.json`: copia descargada desde la web.
 - `cap_act5_*.png`: capturas de la aplicación web, en el orden del recorrido (registro, consentimientos, derechos, privacidad, seguridad y contención).
 
 El archivo `.env`, la base de datos `nortishop.db` y la carpeta `evidencia_incidentes/` NO se incluyen en el repositorio.

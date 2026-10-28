@@ -436,13 +436,17 @@ class PruebasIncidentes(Base5):
     def reglas(self):
         return {a["regla"] for a in deteccion.listar_alertas(self.seguridad)}
 
-    def test_I01_fuerza_bruta_y_relleno_de_credenciales(self):
+    def test_I01_fuerza_bruta_y_relleno_de_credenciales_sin_duplicar(self):
         for _ in range(5):
             ns.login_cliente("beto@prueba.cl", "incorrecta_1234")
         self.assertIn("fuerza_bruta_cuenta", self.reglas())
-        for i in range(deteccion.UMBRAL_FALLOS_GLOBAL):
+        for i in range(deteccion.UMBRAL_FALLOS_GLOBAL + 5):
             ns.login_cliente(f"inexistente{i}@prueba.cl", "incorrecta_1234")
         self.assertIn("relleno_credenciales", self.reglas())
+        # los fallos que siguen llegando mientras la alerta está abierta no generan alertas nuevas
+        reglas = [a["regla"] for a in deteccion.listar_alertas(self.seguridad)]
+        self.assertEqual(reglas.count("relleno_credenciales"), 1)
+        self.assertEqual(reglas.count("fuerza_bruta_cuenta"), 1)
 
     def test_I02_consulta_masiva_de_datos_personales(self):
         for _ in range(deteccion.UMBRAL_CONSULTAS_PERSONAL):

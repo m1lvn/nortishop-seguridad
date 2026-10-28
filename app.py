@@ -103,7 +103,8 @@ def _error(codigo, mensaje):
 def no_autenticado(_):
     if es_api():
         return jsonify({"error": "Se requiere iniciar sesión"}), 401
-    return redirect(url_for("login"))
+    # si traía una cookie es porque la sesión venció o fue revocada (p. ej. en una contención)
+    return redirect(url_for("login", motivo="sesion" if request.cookies.get(COOKIE) else None))
 
 
 @app.errorhandler(AccesoDenegado)
@@ -191,6 +192,11 @@ def inicio():
     return redirect(url_for("cuenta" if g.sesion.tipo == "cliente" else "panel"))
 
 
+# avisos fijos de la pantalla de login: el parámetro solo elige uno, nunca se muestra su valor
+AVISOS_LOGIN = {"sesion": "Tu sesión terminó o fue cerrada por seguridad. Inicia sesión de nuevo.",
+                "registrada": "Cuenta creada. Ya puedes iniciar sesión."}
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -199,7 +205,7 @@ def login():
         if sesion:
             return _iniciar_sesion_web(sesion, "cuenta")
         return render_template("login.html", error="Correo o contraseña incorrectos", personal=False), 401
-    return render_template("login.html", personal=False)
+    return render_template("login.html", personal=False, aviso=AVISOS_LOGIN.get(request.args.get("motivo")))
 
 
 @app.route("/personal/login", methods=["GET", "POST"])
@@ -210,7 +216,7 @@ def login_personal():
         if sesion:
             return _iniciar_sesion_web(sesion, "panel")
         return render_template("login.html", error="Usuario o contraseña incorrectos", personal=True), 401
-    return render_template("login.html", personal=True)
+    return render_template("login.html", personal=True, aviso=AVISOS_LOGIN.get(request.args.get("motivo")))
 
 
 @app.route("/logout", methods=["POST"])
@@ -235,8 +241,8 @@ def registro():
         ns.registrar_cliente(f.get("nombre"), f.get("correo"), f.get("password"),
                              telefono=f.get("telefono") or None, direccion=f.get("direccion") or None,
                              declara_mayor_edad=f.get("mayor_edad") == "si", consentimientos=marcadas, canal="web")
-        return redirect(url_for("login"))
-    return render_template("registro.html", textos=_textos())
+        return redirect(url_for("login", motivo="registrada"))
+    return render_template("registro.html", textos=_textos(), descripciones={f: d for f, d, _, _ in cs.FINALIDADES})
 
 
 # ---------------- Web: cliente ----------------
@@ -356,7 +362,7 @@ def resolver_solicitud(codigo, accion):
 def seguridad():
     return render_template("seguridad.html", alertas=deteccion.listar_alertas(g.sesion),
                            incidentes=incidentes.listar_incidentes(g.sesion),
-                           eventos=ns.leer_auditoria(g.sesion, limite=40),
+                           eventos=ns.leer_auditoria(g.sesion, limite=15),
                            integridad=deteccion.verificar_integridad(g.sesion))
 
 

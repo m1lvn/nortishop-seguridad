@@ -1,0 +1,57 @@
+==============================================================================
+3. DETECCIÓN DE EVENTOS SOSPECHOSOS Y RESPUESTA A INCIDENTES
+==============================================================================
+Eventos que disparan reglas:
+  5 inicios de sesión fallidos sobre la cuenta de Beto
+  10 inicios de sesión fallidos sobre cuentas distintas
+  soporte descifra 30 veces el contacto de un cliente en 1 hora
+  soporte acumula 5 accesos denegados
+
+Alertas generadas (una alerta no es un incidente hasta que seguridad la analiza):
+  id | regla                  | severidad | descripcion                                                         | estado 
+  ---+------------------------+-----------+---------------------------------------------------------------------+--------
+  1  | cambio_privilegios     | media     | Se creó una cuenta privilegiada (rol=seguridad)                     | abierta
+  2  | fuerza_bruta_cuenta    | media     | 5 intentos fallidos de inicio de sesión sobre la cuenta cliente:2   | abierta
+  3  | relleno_credenciales   | alta      | Fallos de inicio de sesión sobre 10 cuentas distintas en 10 minutos | abierta
+  4  | consulta_masiva        | alta      | personal:2 (soporte) descifró 30 registros en 1 hora                | abierta
+  5  | denegaciones_repetidas | media     | personal:2 acumula 5 accesos denegados en 10 minutos                | abierta
+  seguridad descarta alerta de cambio de privilegios         -> OK 
+  seguridad escala la consulta masiva a incidente            -> OK INC-20261028-72FE
+
+Contención (preservando evidencia primero):
+  preservar_evidencia -> bd_20261028T043100Z.db sha256=66ab86de73e94805b1f697d2... ancla auditoría id=159
+  deshabilitar cuenta personal de soporte                    -> OK 
+  soporte (sesión ya iniciada) lee un contacto               -> AccesoDenegado: Acceso denegado
+  soporte intenta iniciar sesión                             -> None (cuenta deshabilitada)
+  suspender permiso contacto.cliente.leer para todos         -> OK 
+  suspender un permiso del propio rol seguridad              -> ValueError: Permiso no suspendible
+  administrador intenta ejecutar contención                  -> AccesoDenegado: Acceso denegado
+
+Evaluación y decisión de notificación:
+  registrar_evaluacion                                       -> OK {'notificar_agencia': True, 'notificar_titulares': False}
+  criterios (evaluar_notificacion):
+    ['correo'], llaves comprometidas=False, titulares=100 -> {'notificar_agencia': False, 'notificar_titulares': False}
+    ['correo', 'telefono'], llaves comprometidas=True, titulares=30 -> {'notificar_agencia': True, 'notificar_titulares': False}
+    ['historial_compras', 'tarjeta_ultimos4'], llaves comprometidas=True, titulares=200 -> {'notificar_agencia': True, 'notificar_titulares': True}
+    ['credenciales'], llaves comprometidas=False, titulares=3 -> {'notificar_agencia': True, 'notificar_titulares': False}
+
+Erradicación y recuperación:
+  fase -> erradicacion
+  fase -> recuperacion
+  comprobaciones antes de restablecer: {'bitacora_integra': True, 'valores_con_llave_antigua': 0, 'permisos_suspendidos': ['contacto.cliente.leer'], 'cuentas_deshabilitadas': 1, 'alertas_altas_sin_resolver': 1, 'listo': False}
+  comprobaciones tras rehabilitar:     {'bitacora_integra': True, 'valores_con_llave_antigua': 0, 'permisos_suspendidos': [], 'cuentas_deshabilitadas': 0, 'alertas_altas_sin_resolver': 0, 'listo': True}
+
+Notificación (borrador para los titulares):
+  Estimado/a cliente de NortiShop:
+  1. Qué ocurrió: personal:2 (soporte) descifró 30 registros en 1 hora
+  2. Fecha de detección: 2026-10-28 04:31:00 (UTC). Período en que ocurrió: entre 2026-10-28 09:00 y 2026-10-28 10:00.
+  3. Datos personales potencialmente afectados: correo, nombre, telefono. Titulares afectados (estimación): 30.
+  4. Posibles consecuencias: uso de los datos para correos o llamadas fraudulentas (phishing) y, si hubo credenciales, acceso no autorizado a la cuenta.
+  5. Medidas adoptadas: Evidencia preservada; cuenta de soporte deshabilitada; permiso contacto.cliente.leer suspendido; Se revisaron los permisos de soporte y se exigió MFA al personal; Cuenta de soporte rehabilitada con contraseña nueva; permiso reactivado.
+  6. Recomendaciones: cambie su contraseña de NortiShop y la de otros sitios donde use la misma; desconfíe de mensajes que pidan datos de pago o claves; NortiShop nunca le pedirá su contraseña.
+  7. Contacto para consultas y seguimiento: privacidad@nortishop.cl (indique el código INC-20261028-72FE).
+  cerrar sin registrar la notificación                       -> ValueError: No se puede cerrar: falta registrar la notificación; el incidente no llegó a la fase de lecciones aprendidas
+  cerrar con lecciones aprendidas                            -> OK 
+  codigo            | tipo                    | severidad | fase    | notificar_agencia | notificar_titulares | fecha_notificacion  | fecha_cierre       
+  ------------------+-------------------------+-----------+---------+-------------------+---------------------+---------------------+--------------------
+  INC-20261028-72FE | acceso_indebido_interno | alta      | cerrado | 1                 | 0                   | 2026-10-28 04:31:00 | 2026-10-28 04:31:00

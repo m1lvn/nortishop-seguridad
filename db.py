@@ -216,6 +216,7 @@ CREATE TABLE IF NOT EXISTS alertas (
     actor_tipo   TEXT,
     actor_id     INTEGER,
     descripcion  TEXT NOT NULL,            -- sin datos personales
+    objeto       TEXT,                     -- cuenta o actor observado: evita duplicar la misma alerta
     estado       TEXT NOT NULL DEFAULT 'abierta'
                  CHECK (estado IN ('abierta','en_analisis','descartada','incidente')),
     incidente_id INTEGER REFERENCES incidentes(id)

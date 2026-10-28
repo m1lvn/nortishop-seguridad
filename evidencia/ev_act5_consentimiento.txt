@@ -1,0 +1,71 @@
+==============================================================================
+1. MÓDULO DE CONSENTIMIENTO
+==============================================================================
+Finalidades y base legal:
+  codigo                   | base_legal                            | requiere_consentimiento
+  -------------------------+---------------------------------------+------------------------
+  compra                   | Ejecución del contrato de compraventa | 0                      
+  boletin                  | Consentimiento                        | 1                      
+  analitica_comportamiento | Consentimiento                        | 1                      
+  ofertas_personalizadas   | Consentimiento                        | 1                      
+
+Registro de Ana marcando solo 'boletin' (las demás casillas vienen desmarcadas):
+  finalidad                | estado       | version | fecha              
+  -------------------------+--------------+---------+--------------------
+  boletin                  | otorgado     | 1       | 2026-10-28 04:30:52
+  analitica_comportamiento | sin_registro | None    | None               
+  ofertas_personalizadas   | sin_registro | None    | None               
+
+Registro sin declarar mayoría de edad:
+  registrar_cliente(declara_mayor_edad=False)                -> ValueError: Para crear una cuenta debes declarar que eres mayor de 18 años
+
+Una finalidad no habilita otra:
+  Ana otorga analitica_comportamiento (v1)                   -> OK 1
+  vigente(analitica_comportamiento) = True
+  vigente(ofertas_personalizadas)   = False
+  ofertas() personalizadas          = False
+  Ana otorga una versión que no se le mostró (v7)            -> ValueError: El texto aceptado no corresponde a la versión vigente
+  Ana 'consiente' la finalidad contractual 'compra'          -> ValueError: Esta finalidad no se basa en el consentimiento
+
+Revocación y su efecto en los procesos:
+  guardar_comportamiento (con consentimiento)                -> OK True
+  filas en comportamiento_compra    = 1
+  boletín: ana en la campaña       = True
+  Ana revoca analitica_comportamiento                        -> OK 
+  Ana revoca boletin                                         -> OK 
+  filas en comportamiento_compra    = 0
+  guardar_comportamiento (revocado)                          -> OK False
+  boletín: ana en la campaña       = False
+
+Nueva versión del texto con cambio material:
+  privacidad publica v2 (cambio menor)                       -> OK 2
+  privacidad publica v3 (cambio material)                    -> OK 3
+  finalidad | estado              | version | version_vigente
+  ----------+---------------------+---------+----------------
+  boletin   | requiere_renovacion | 1       | 3              
+  marketing publica un texto                                 -> AccesoDenegado: Acceso denegado
+
+Historial de Ana (consultar_historial):
+  fecha               | finalidad                | accion   | version | canal
+  --------------------+--------------------------+----------+---------+------
+  2026-10-28 04:30:52 | boletin                  | otorgado | 1       | web  
+  2026-10-28 04:30:53 | analitica_comportamiento | otorgado | 1       | web  
+  2026-10-28 04:30:53 | analitica_comportamiento | revocado | 1       | web  
+  2026-10-28 04:30:53 | boletin                  | revocado | 1       | web  
+  2026-10-28 04:30:53 | boletin                  | otorgado | 1       | web  
+
+Filas crudas de la tabla consentimientos (sin datos personales: titular por id):
+  id | titular_tipo | titular_ref | finalidad                | version | accion   | fecha               | canal
+  ---+--------------+-------------+--------------------------+---------+----------+---------------------+------
+  1  | cliente      | 1           | boletin                  | 1       | otorgado | 2026-10-28 04:30:52 | web  
+  2  | cliente      | 1           | analitica_comportamiento | 1       | otorgado | 2026-10-28 04:30:53 | web  
+  3  | cliente      | 1           | analitica_comportamiento | 1       | revocado | 2026-10-28 04:30:53 | web  
+  4  | cliente      | 1           | boletin                  | 1       | revocado | 2026-10-28 04:30:53 | web  
+  5  | cliente      | 1           | boletin                  | 1       | otorgado | 2026-10-28 04:30:53 | web  
+
+Intentos de modificar el historial directamente en la base:
+  UPDATE consentimientos SET accion='otorgado' WHERE id=2    -> IntegrityError: el historial de consentimientos no se modifica
+  DELETE FROM consentimientos WHERE id=1                     -> IntegrityError: el historial de consentimientos no se borra
+
+Otro cliente intenta ver el estado de Ana:
+  estado_cliente(beto, id_ana)                               -> AccesoDenegado: Acceso denegado

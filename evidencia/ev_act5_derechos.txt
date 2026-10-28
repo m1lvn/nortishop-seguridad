@@ -1,0 +1,57 @@
+==============================================================================
+2. EJERCICIO DE DERECHOS
+==============================================================================
+a) Acceso / portabilidad
+  crear_solicitud con contraseña incorrecta                  -> AccesoDenegado: Acceso denegado
+  crear_solicitud('portabilidad') con contraseña             -> OK SD-EB8EAD8BEE
+  correo recibido: "NortiShop: código de verificación de la solicitud SD-EB8EAD8BEE"
+  en la base solo queda el HMAC del código: cde426f83b51b999d603ef98...
+  exportar antes de verificar                                -> ValueError: La solicitud no está lista para exportar o ya fue respondida
+  Beto intenta verificar la solicitud de Ana                 -> AccesoDenegado: Acceso denegado
+  verificar_identidad con código incorrecto                  -> ValueError: El código es incorrecto o venció
+  verificar_identidad con el código del correo               -> OK en_evaluacion
+  exportar -> JSON con secciones ['formato', 'generado', 'solicitud', 'cuenta', 'tarjetas', 'pedidos', 'consentimientos'] (guardado en evidencia/ev_act5_exportacion.json)
+  ¿la exportación incluye hash de contraseña? False
+  ¿la exportación incluye token de pasarela? False
+  ¿la exportación incluye datos del invitado? False
+  ¿la exportación incluye índice HMAC del correo? False
+  ¿la exportación incluye seudónimo? False
+  exportar por segunda vez                                   -> ValueError: La solicitud no está lista para exportar o ya fue respondida
+
+b) Rectificación
+  rectificar campo 'rol'                                     -> ValueError: Solo se pueden rectificar: nombre, teléfono, dirección y correo
+  rectificar teléfono con formato inválido                   -> ValueError: El campo teléfono no tiene un formato válido
+  verificar y ejecutar rectificación de teléfono y dirección -> OK cerrada
+  dirección del pedido no despachado ahora: Calle Nueva 99, Ñuñoa
+  verificar identidad (cambio de correo)                     -> OK en_evaluacion
+  confirmar con el código enviado al correo NUEVO            -> OK cerrada
+  login con el correo antiguo: None
+  login con el correo nuevo:   Sesion(tipo='cliente', id=1, rol='cliente')
+  teléfono tras el recifrado:  +56 9 7777 8888
+
+c) Supresión
+  supresión con un pedido en curso                           -> OK cerrada
+  respuesta: Existen pedidos en curso (pagados o despachados). Sus datos se necesitan para cumplir el contrato de compraventa y el despacho. Puede volver a solicitar la supresión cuando los pedidos se hayan entregado.
+  supresión sin pedidos en curso                             -> OK en_evaluacion
+  bandeja de privacidad (sin nombres ni correos):
+  codigo        | tipo      | estado        | fecha_recepcion     | plazo_vence         | dias_restantes | titular     
+  --------------+-----------+---------------+---------------------+---------------------+----------------+-------------
+  SD-B8AD647E50 | supresion | en_evaluacion | 2026-10-28 04:30:55 | 2026-11-27 04:30:55 | 29             | bd34990418e1
+  soporte intenta resolver la supresión                      -> AccesoDenegado: Acceso denegado
+  privacidad aprueba la supresión                            -> OK cerrada
+  después de la supresión:
+    clientes con id de Ana:          0
+    tarjetas guardadas:              0
+    pedido 1 (contable):             {'codigo': 'NS-E7152AFFE428', 'cliente_id': None, 'direccion_cifrado': None, 'monto': 39990, 'estado': 'entregado'}
+    consentimientos seudonimizados:  5
+    lista de supresión (respaldos):  1 índice(s)
+    login de Ana:                    None
+
+Seguimiento de todas las solicitudes (estado y fechas de cada etapa):
+  codigo        | tipo          | estado  | fecha_recepcion     | fecha_verificacion  | fecha_respuesta     | fecha_cierre        | cliente_id
+  --------------+---------------+---------+---------------------+---------------------+---------------------+---------------------+-----------
+  SD-EB8EAD8BEE | portabilidad  | cerrada | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | None      
+  SD-1309B27C2D | rectificacion | cerrada | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | None      
+  SD-49D9D39902 | rectificacion | cerrada | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | 2026-10-28 04:30:54 | None      
+  SD-ADE5BCE377 | supresion     | cerrada | 2026-10-28 04:30:55 | 2026-10-28 04:30:55 | 2026-10-28 04:30:55 | 2026-10-28 04:30:55 | None      
+  SD-B8AD647E50 | supresion     | cerrada | 2026-10-28 04:30:55 | 2026-10-28 04:30:55 | 2026-10-28 04:30:55 | 2026-10-28 04:30:55 | None      

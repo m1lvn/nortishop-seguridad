@@ -25,16 +25,17 @@ def _contar(con, sql, params):
     return con.execute(sql, params).fetchone()[0]
 
 
-def crear_alerta(regla, severidad, descripcion, actor_tipo=None, actor_id=None):
-    """No duplica una alerta abierta de la misma regla y descripción creada en la última hora."""
+def crear_alerta(regla, severidad, descripcion, actor_tipo=None, actor_id=None, objeto=None):
+    """No duplica una alerta abierta de la misma regla sobre el mismo objeto (cuenta o actor) en la última hora:
+    mientras se analiza, los eventos que siguen llegando quedan en la bitácora y no generan alertas nuevas."""
     con = conectar()
-    existe = con.execute("SELECT 1 FROM alertas WHERE regla=? AND descripcion=? AND estado IN ('abierta','en_analisis') "
-                         "AND fecha >= datetime('now','-1 hour')", (regla, descripcion)).fetchone()
+    existe = con.execute("SELECT 1 FROM alertas WHERE regla=? AND objeto IS ? AND estado IN ('abierta','en_analisis') "
+                         "AND fecha >= datetime('now','-1 hour')", (regla, objeto)).fetchone()
     if existe:
         con.close()
         return None
-    cur = con.execute("INSERT INTO alertas (fecha, regla, severidad, actor_tipo, actor_id, descripcion) "
-                      "VALUES (?,?,?,?,?,?)", (_ahora(), regla, severidad, actor_tipo, actor_id, descripcion))
+    cur = con.execute("INSERT INTO alertas (fecha, regla, severidad, actor_tipo, actor_id, descripcion, objeto) "
+                      "VALUES (?,?,?,?,?,?,?)", (_ahora(), regla, severidad, actor_tipo, actor_id, descripcion, objeto))
     con.commit()
     con.close()
     from auditoria import registrar_evento
@@ -55,45 +56,47 @@ def revisar(fila, evento_id):
                              "AND recurso=? AND fecha >= datetime('now','-15 minutes')", (fila["recurso"],))
             if n >= UMBRAL_FALLOS_CUENTA:
                 alertas.append(("fuerza_bruta_cuenta", "media",
-                                f"{n} intentos fallidos de inicio de sesión sobre la cuenta {fila['recurso']}"))
+                                f"{n} intentos fallidos de inicio de sesión sobre la cuenta {fila['recurso']}", fila["recurso"]))
         n = _contar(con, "SELECT COUNT(DISTINCT COALESCE(recurso, 'inexistente:' || id)) FROM auditoria "
                          "WHERE permiso='auth.login' AND resultado='fallido' AND fecha >= datetime('now','-10 minutes')", ())
         if n >= UMBRAL_FALLOS_GLOBAL:
             alertas.append(("relleno_credenciales", "alta",
-                            f"Fallos de inicio de sesión sobre {n} cuentas distintas en 10 minutos"))
+                            f"Fallos de inicio de sesión sobre {n} cuentas distintas en 10 minutos", "global"))
 
     if permiso == "derechos.exportar" and resultado == "exito" and actor_id is not None:
         n = _contar(con, "SELECT COUNT(*) FROM auditoria WHERE permiso='derechos.exportar' AND resultado='exito' "
                          "AND actor_tipo=? AND actor_id=? AND fecha >= datetime('now','-1 day')", (actor_tipo, actor_id))
         if n >= UMBRAL_EXPORTACIONES:
-            alertas.append(("exportacion_anomala", "alta", f"{n} exportaciones de datos de {actor_tipo}:{actor_id} en 24 horas"))
+            alertas.append(("exportacion_anomala", "alta", f"{n} exportaciones de datos de {actor_tipo}:{actor_id} en 24 horas",
+                            f"{actor_tipo}:{actor_id}"))
         cambio = _contar(con, "SELECT COUNT(*) FROM auditoria WHERE permiso='derechos.rectificar' AND resultado='exito' "
                               "AND actor_tipo=? AND actor_id=? AND detalle LIKE '%correo%' "
                               "AND fecha >= datetime('now','-1 day')", (actor_tipo, actor_id))
         if cambio:
             alertas.append(("cambio_correo_y_exportacion", "alta",
-                            f"{actor_tipo}:{actor_id} cambió su correo y exportó sus datos en menos de 24 horas"))
+                            f"{actor_tipo}:{actor_id} cambió su correo y exportó sus datos en menos de 24 horas", f"{actor_tipo}:{actor_id}"))
 
     if permiso in PERMISOS_DATOS_PERSONALES and resultado == "permitido" and actor_tipo == "personal":
         n = _contar(con, f"SELECT COUNT(*) FROM auditoria WHERE permiso IN ({','.join('?' * len(PERMISOS_DATOS_PERSONALES))}) "
                          "AND resultado='permitido' AND actor_tipo='personal' AND actor_id=? "
                          "AND fecha >= datetime('now','-1 hour')", (*PERMISOS_DATOS_PERSONALES, actor_id))
         if n >= UMBRAL_CONSULTAS_PERSONAL:
-            alertas.append(("consulta_masiva", "alta", f"personal:{actor_id} ({fila['rol']}) descifró {n} registros en 1 hora"))
+            alertas.append(("consulta_masiva", "alta", f"personal:{actor_id} ({fila['rol']}) descifró {n} registros en 1 hora",
+                            f"{actor_tipo}:{actor_id}"))
 
     if resultado == "denegado" and actor_id is not None:
         n = _contar(con, "SELECT COUNT(*) FROM auditoria WHERE resultado='denegado' AND actor_tipo=? AND actor_id=? "
                          "AND fecha >= datetime('now','-10 minutes')", (actor_tipo, actor_id))
         if n >= UMBRAL_DENEGACIONES:
             alertas.append(("denegaciones_repetidas", "media",
-                            f"{actor_tipo}:{actor_id} acumula {n} accesos denegados en 10 minutos"))
+                            f"{actor_tipo}:{actor_id} acumula {n} accesos denegados en 10 minutos", f"{actor_tipo}:{actor_id}"))
 
     if permiso == "roles.crear_cuenta" and fila["detalle"] in ("rol=administrador", "rol=seguridad"):
-        alertas.append(("cambio_privilegios", "media", f"Se creó una cuenta privilegiada ({fila['detalle']})"))
+        alertas.append(("cambio_privilegios", "media", f"Se creó una cuenta privilegiada ({fila['detalle']})", fila["recurso"]))
 
     con.close()
-    for regla, severidad, descripcion in alertas:
-        crear_alerta(regla, severidad, descripcion, actor_tipo, actor_id)
+    for regla, severidad, descripcion, objeto in alertas:
+        crear_alerta(regla, severidad, descripcion, actor_tipo, actor_id, objeto)
 
 
 # ---------- Operaciones del rol seguridad ----------

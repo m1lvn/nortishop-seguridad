@@ -40,7 +40,7 @@ No pedimos documentos ni datos adicionales. Respondemos dentro de 30 días corri
 </div>
 <h2>Mis solicitudes</h2>
 <div class="tabla"><table>
-  <tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Recibida</th><th>Plazo</th><th>Respuesta</th><th></th></tr>
+  <tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Recibida</th><th>Plazo</th><th>Respuesta</th><th>Acción</th></tr>
   {% for s in solicitudes %}
   <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
     <td>{{ s.fecha_recepcion }}</td><td>{{ s.plazo_vence }}{% if s.prorrogada %} (prorrogado){% endif %}</td>

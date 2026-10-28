@@ -7,17 +7,17 @@ body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, s
 .marca { font-weight: 700; color: var(--texto); text-decoration: none; }
 a { color: var(--acento); }
 .quien { color: var(--suave); font-size: 13px; }
-main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; }
 h1 { font-size: 22px; margin: 4px 0 16px; }
 h2 { font-size: 17px; margin: 28px 0 10px; }
 table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 14px; }
 th, td { border: 1px solid var(--borde); padding: 6px 8px; text-align: left; vertical-align: top; }
 th { background: var(--gris); }
 .tabla { overflow-x: auto; }
-form.bloque { display: grid; gap: 10px; align-content: start; justify-items: start; max-width: 520px; padding: 14px; border: 1px solid var(--borde); border-radius: 6px; margin: 10px 0; }
+form.bloque { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-content: start; justify-items: start; max-width: 520px; padding: 14px; border: 1px solid var(--borde); border-radius: 6px; margin: 10px 0; }
 label { display: grid; gap: 4px; font-size: 14px; justify-self: stretch; }
 label.casilla { display: flex; gap: 8px; align-items: flex-start; }
-input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 4px; }
+input, select, textarea { min-width: 0; max-width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 4px; }
 button { font: inherit; padding: 6px 12px; border: 1px solid var(--acento); background: var(--acento); color: #fff; border-radius: 4px; cursor: pointer; }
 button.secundario { background: #fff; color: var(--acento); }
 button.peligro { background: var(--mal); border-color: var(--mal); }
@@ -32,3 +32,6 @@ button.enlace { background: none; border: 0; color: var(--acento); padding: 0; t
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
 pre { white-space: pre-wrap; background: var(--gris); padding: 12px; border-radius: 6px; font-size: 13px; }
 .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.compacta { font-size: 12px; }
+.compacta th, .compacta td { padding: 4px 5px; }
+.compacta td:nth-child(2) { white-space: nowrap; }

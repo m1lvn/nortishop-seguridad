@@ -139,6 +139,7 @@ def borrador_notificacion(sesion, codigo, destinatario="titulares"):
     periodo = (f"entre {inc['inicio_estimado']} y {inc['fin_estimado']}" if inc["inicio_estimado"]
                else "en investigación")
     datos = (inc["datos_afectados"] or "en evaluación").replace(",", ", ")
+    medidas = "; ".join(m.strip().rstrip(".") for m in (inc["medidas"] or "contención en curso").splitlines() if m.strip())
     encabezado = ("A la Agencia de Protección de Datos Personales" if destinatario == "agencia"
                   else "Estimado/a cliente de NortiShop")
     return "\n".join([
@@ -149,7 +150,7 @@ def borrador_notificacion(sesion, codigo, destinatario="titulares"):
         f"Titulares afectados (estimación): {inc['titulares_afectados'] if inc['titulares_afectados'] is not None else 'en evaluación'}.",
         "4. Posibles consecuencias: uso de los datos para correos o llamadas fraudulentas (phishing) y, si hubo "
         "credenciales, acceso no autorizado a la cuenta.",
-        f"5. Medidas adoptadas: {(inc['medidas'] or 'contención en curso').rstrip('.')}.",
+        f"5. Medidas adoptadas: {medidas}.",
         "6. Recomendaciones: cambie su contraseña de NortiShop y la de otros sitios donde use la misma; desconfíe de "
         "mensajes que pidan datos de pago o claves; NortiShop nunca le pedirá su contraseña.",
         f"7. Contacto para consultas y seguimiento: {CONTACTO} (indique el código {inc['codigo']}).",

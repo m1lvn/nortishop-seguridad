@@ -1,0 +1,60 @@
+{
+  "formato": "nortishop-export/1.0",
+  "generado": "2026-10-28 04:30:32",
+  "solicitud": "SD-BC0C7DE618",
+  "cuenta": {
+    "nombre": "Camila Rojas",
+    "correo": "camila.rojas@correo.cl",
+    "telefono": "+56 9 1234 5678",
+    "direccion": "Av. Los Leones 1234, Providencia",
+    "nortipuntos": 0,
+    "mayoria_edad_declarada": "2026-10-28 04:30:20"
+  },
+  "tarjetas": [
+    {
+      "marca": "VISA",
+      "terminacion": "1111"
+    }
+  ],
+  "pedidos": [
+    {
+      "codigo": "NS-9477CDD5C70E",
+      "fecha": "2026-10-28 04:30:20",
+      "estado": "entregado",
+      "monto": 39990,
+      "tarjeta": "**** 1111",
+      "region": "Metropolitana de Santiago",
+      "direccion": "Av. Los Leones 1234, Providencia",
+      "productos": [
+        {
+          "producto": "Audífonos Bluetooth",
+          "cantidad": 1,
+          "precio": 39990
+        }
+      ]
+    }
+  ],
+  "consentimientos": [
+    {
+      "finalidad": "boletin",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-10-28 04:30:20",
+      "canal": "web"
+    },
+    {
+      "finalidad": "analitica_comportamiento",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-10-28 04:30:30",
+      "canal": "web"
+    },
+    {
+      "finalidad": "boletin",
+      "version": 1,
+      "accion": "revocado",
+      "fecha": "2026-10-28 04:30:30",
+      "canal": "web"
+    }
+  ]
+}

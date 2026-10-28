@@ -31,11 +31,12 @@
   <form method="post" class="bloque">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="evaluar">
     <strong>Evaluación de alcance</strong>
-    {% for c in categorias %}<label class="casilla"><input type="checkbox" name="categorias" value="{{ c }}">{{ c }}</label>{% endfor %}
-    <label>Titulares afectados <input name="titulares" type="number" min="0" value="0"></label>
+    {% set marcadas = (inc.datos_afectados or "").split(",") %}
+    {% for c in categorias %}<label class="casilla"><input type="checkbox" name="categorias" value="{{ c }}"{{ " checked" if c in marcadas }}>{{ c }}</label>{% endfor %}
+    <label>Titulares afectados <input name="titulares" type="number" min="0" value="{{ inc.titulares_afectados or 0 }}"></label>
     <label class="casilla"><input type="checkbox" name="llaves" value="si">Las llaves de cifrado se comprometieron</label>
-    <label>Inicio estimado <input name="inicio" placeholder="AAAA-MM-DD HH:MM"></label>
-    <label>Fin estimado <input name="fin" placeholder="AAAA-MM-DD HH:MM"></label>
+    <label>Inicio estimado <input name="inicio" placeholder="AAAA-MM-DD HH:MM" value="{{ inc.inicio_estimado or '' }}"></label>
+    <label>Fin estimado <input name="fin" placeholder="AAAA-MM-DD HH:MM" value="{{ inc.fin_estimado or '' }}"></label>
     <button>Registrar evaluación</button>
   </form>
 </div>
