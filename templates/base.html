@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}NortiShop{% endblock %} · NortiShop</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+</head>
+<body>
+<header class="barra">
+  <a class="marca" href="{{ url_for('inicio') }}">NortiShop</a>
+  <nav>
+  {% if sesion and sesion.tipo == 'cliente' %}
+    <a href="{{ url_for('cuenta') }}">Mi cuenta</a>
+    <a href="{{ url_for('consentimientos') }}">Consentimientos</a>
+    <a href="{{ url_for('mis_derechos') }}">Mis derechos</a>
+    {% if modo_demo %}<a href="{{ url_for('buzon') }}">Buzón (demo)</a>{% endif %}
+  {% elif sesion %}
+    <a href="{{ url_for('panel') }}">Panel</a>
+    {% if sesion.rol == 'privacidad' %}<a href="{{ url_for('bandeja_privacidad') }}">Solicitudes</a>{% endif %}
+    {% if sesion.rol == 'seguridad' %}<a href="{{ url_for('seguridad') }}">Seguridad</a>{% endif %}
+  {% endif %}
+  {% if sesion %}
+    <span class="quien">{{ sesion.tipo }} #{{ sesion.id }} · {{ sesion.rol }}</span>
+    <form method="post" action="{{ url_for('logout') }}" class="en-linea">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><button class="enlace">Salir</button>
+    </form>
+  {% endif %}
+  </nav>
+</header>
+<main>
+{% block contenido %}{% endblock %}
+</main>
+</body>
+</html>

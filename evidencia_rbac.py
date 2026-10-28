@@ -25,7 +25,7 @@ for u, rol in [("sol_soporte", "soporte"), ("lau_logistica", "logistica"), ("mar
 soporte, logistica, marketing = (ns.login_admin(u, "Clave#Segura1")
                                  for u in ("sol_soporte", "lau_logistica", "mar_marketing"))
 ana = ns.registrar_cliente("Ana Prueba", "ana@prueba.cl", "Clave#Segura1", telefono="+56 9 1111 2222",
-                           consentimiento_analitica=True)
+                           consentimiento_analitica=True, declara_mayor_edad=True)
 ns.guardar_comportamiento(ana, {"categorias": ["tecnologia"]})
 ns.comprar_como_invitado(pasarela, "invitado@prueba.cl", "+56 9 8765 4321", "Av. Falsa 123, Santiago",
                          "5555 4444 3333 2222", "05/27", "456",
@@ -40,7 +40,7 @@ def corto(v, n=34):
 
 con = db.conectar()
 f = con.execute("SELECT id, nombre, correo_cifrado, telefono_cifrado, direccion_cifrado, "
-                "consentimiento_analitica FROM clientes").fetchone()
+                "mayoria_edad_declarada FROM clientes").fetchone()
 print("== clientes (fila cruda)")
 print({k: (corto(f[k]) if isinstance(f[k], str) else f[k]) for k in f.keys()})
 c = con.execute("SELECT seudonimo, datos_cifrado FROM comportamiento_compra").fetchone()

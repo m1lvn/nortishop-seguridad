@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Solicitudes de derechos{% endblock %}
+{% block contenido %}
+<h1>Solicitudes de derechos</h1>
+<p>La bandeja no muestra nombres ni correos: el titular se identifica con un seudónimo. Plazo legal: 30 días
+corridos, con una prórroga por igual período.</p>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Recibida</th><th>Verificada</th><th>Vence</th><th>Días</th><th>Titular</th><th>Acciones</th></tr>
+  {% for s in solicitudes %}
+  <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
+    <td>{{ s.fecha_recepcion }}</td><td>{{ s.fecha_verificacion or "—" }}</td>
+    <td>{{ s.plazo_vence }}{% if s.prorrogada %} (prorrogada){% endif %}</td>
+    <td>{{ s.dias_restantes if s.estado != 'cerrada' else "—" }}</td><td class="mono">{{ s.titular }}</td>
+    <td>
+    {% if s.tipo == 'supresion' and s.estado == 'en_evaluacion' %}
+      <form method="post" action="{{ url_for('resolver_solicitud', codigo=s.codigo, accion='aprobar') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><button class="peligro">Aprobar y suprimir</button></form>
+      <form method="post" action="{{ url_for('resolver_solicitud', codigo=s.codigo, accion='rechazar') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <textarea name="motivo" placeholder="Fundamento del rechazo" required minlength="20" maxlength="500"></textarea>
+        <button class="secundario">Rechazar con fundamento</button></form>
+    {% endif %}
+    {% if s.estado not in ('ejecutada', 'rechazada', 'cerrada') and not s.prorrogada %}
+      <form method="post" action="{{ url_for('resolver_solicitud', codigo=s.codigo, accion='prorrogar') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input name="motivo" placeholder="Motivo de la prórroga" required minlength="20" maxlength="300">
+        <button class="secundario">Prorrogar 30 días</button></form>
+    {% endif %}
+    {% if s.resultado %}<small>{{ s.resultado }}</small>{% endif %}
+    </td></tr>
+  {% else %}<tr><td colspan="9">No hay solicitudes.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

@@ -8,6 +8,8 @@
 #
 # Toda función que entrega o modifica información sensible recibe una Sesion como primer
 # parámetro y está protegida por @requiere_permiso (rbac.py), que además la audita.
+# Los procesos que dependen del consentimiento preguntan por su finalidad exacta
+# (consentimiento.vigente): analítica, boletín y ofertas personalizadas.
 
 import re
 import secrets
@@ -18,11 +20,13 @@ from config import LLAVE_PASARELA
 from cripto import (hashear_password, verificar_password, cifrar, descifrar,
                     cifrar_json, descifrar_json, indice_busqueda, firma_valida)
 from rbac import Sesion, AccesoDenegado, requiere_permiso, log
+from auditoria import registrar_evento, purgar_vencidos
+import consentimiento
 
 MAX_INTENTOS = 5                 # intentos fallidos antes del bloqueo
 MINUTOS_BLOQUEO = 15
 UMBRAL_K = 5                     # tamaño mínimo de grupo en los reportes anonimizados
-ROLES_PERSONAL = ("administrador", "soporte", "logistica", "marketing")
+ROLES_PERSONAL = ("administrador", "soporte", "logistica", "marketing", "privacidad", "seguridad")
 ESTADOS_PEDIDO = ("pagado", "despachado", "entregado")
 
 REGIONES = (
@@ -102,9 +106,15 @@ def _verificar_hash_relleno(password):
     verificar_password(password, _hash_relleno)
 
 
+def _evento_login(tabla, cuenta_id, resultado, detalle=None):
+    """El recurso es el id interno de la cuenta (None si no existe): nunca el correo ni el usuario."""
+    actor = "cliente" if tabla == "clientes" else "personal"
+    registrar_evento(None, "auth.login", None if cuenta_id is None else f"{actor}:{cuenta_id}", resultado, detalle)
+
+
 def _verificar_con_bloqueo(tabla, columna, valor, password):
     """
-    Devuelve la fila si la clave es correcta y la cuenta no está bloqueada; si no, None.
+    Devuelve la fila si la clave es correcta y la cuenta no está bloqueada ni deshabilitada; si no, None.
     tabla y columna vienen siempre del código (nunca del usuario); valor va como parámetro.
     """
     con = conectar()
@@ -112,15 +122,18 @@ def _verificar_con_bloqueo(tabla, columna, valor, password):
     if f is None:
         con.close()
         _verificar_hash_relleno(password)
+        _evento_login(tabla, None, "fallido", "cuenta_inexistente")
         return None
-    if f["bloqueado_hasta"] and f["bloqueado_hasta"] > _ahora():
+    if f["deshabilitada"] or (f["bloqueado_hasta"] and f["bloqueado_hasta"] > _ahora()):
         con.close()
         _verificar_hash_relleno(password)
+        _evento_login(tabla, f["id"], "fallido", "cuenta_deshabilitada" if f["deshabilitada"] else "cuenta_bloqueada")
         return None
     if verificar_password(password, f["password_hash"]):
         con.execute(f"UPDATE {tabla} SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id = ?", (f["id"],))
         con.commit()
         con.close()
+        _evento_login(tabla, f["id"], "exito")
         return f
     intentos = f["intentos_fallidos"] + 1
     if intentos >= MAX_INTENTOS:
@@ -131,13 +144,33 @@ def _verificar_con_bloqueo(tabla, columna, valor, password):
         con.execute(f"UPDATE {tabla} SET intentos_fallidos = ? WHERE id = ?", (intentos, f["id"]))
     con.commit()
     con.close()
+    _evento_login(tabla, f["id"], "fallido", "bloqueo_activado" if intentos >= MAX_INTENTOS else "clave_incorrecta")
     return None
+
+
+def reautenticar(sesion, password):
+    """Vuelve a pedir la contraseña antes de una operación de riesgo (cuenta con el mismo bloqueo)."""
+    if not isinstance(sesion, Sesion) or sesion.tipo != "cliente":
+        return False
+    con = conectar()
+    f = con.execute("SELECT correo_indice FROM clientes WHERE id=?", (sesion.id,)).fetchone()
+    con.close()
+    return f is not None and _verificar_con_bloqueo("clientes", "correo_indice", f["correo_indice"], password) is not None
 
 
 # ---------- Cliente registrado ----------
 
-def registrar_cliente(nombre, correo, password, telefono=None, direccion=None, consentimiento_analitica=False):
-    """Solo se exige lo necesario para operar la cuenta: nombre, correo y contraseña."""
+def registrar_cliente(nombre, correo, password, telefono=None, direccion=None, consentimiento_analitica=False, *,
+                      declara_mayor_edad, consentimientos=(), canal="registro"):
+    """
+    Solo se exige lo necesario para operar la cuenta: nombre, correo y contraseña, más la declaración
+    de mayoría de edad (NortiShop no vende a menores: no se guarda la fecha de nacimiento).
+    consentimientos: finalidades que el titular marcó, cada una por separado (por defecto ninguna).
+    consentimiento_analitica=True equivale a marcar "analitica_comportamiento".
+    """
+    if declara_mayor_edad is not True:
+        raise ValueError("Para crear una cuenta debes declarar que eres mayor de 18 años")
+    finalidades = set(consentimientos) | ({"analitica_comportamiento"} if consentimiento_analitica else set())
     nombre = validar_opcional(nombre, "nombre", 80)
     if nombre is None:
         raise ValueError("El campo nombre es obligatorio")
@@ -147,19 +180,27 @@ def registrar_cliente(nombre, correo, password, telefono=None, direccion=None, c
     direccion = validar_opcional(direccion, "dirección", 200)
     idx = indice_busqueda(correo)
     con = conectar()
-    cur = con.execute(
-        """INSERT INTO clientes (nombre, correo_cifrado, correo_indice, password_hash,
-                                 telefono_cifrado, direccion_cifrado, consentimiento_analitica)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (nombre, cifrar(correo, _ctx_cliente("correo", idx)), idx, hashear_password(password),
-         _cifrar_opcional(telefono, _ctx_cliente("telefono", idx)),
-         _cifrar_opcional(direccion, _ctx_cliente("direccion", idx)),
-         1 if consentimiento_analitica else 0),
-    )
-    con.commit()
-    con.close()
-    log.info(f"cliente registrado id={cur.lastrowid}")
-    return cur.lastrowid
+    try:
+        cur = con.execute(
+            """INSERT INTO clientes (nombre, correo_cifrado, correo_indice, password_hash,
+                                     telefono_cifrado, direccion_cifrado, mayoria_edad_declarada)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (nombre, cifrar(correo, _ctx_cliente("correo", idx)), idx, hashear_password(password),
+             _cifrar_opcional(telefono, _ctx_cliente("telefono", idx)),
+             _cifrar_opcional(direccion, _ctx_cliente("direccion", idx)), _ahora()),
+        )
+        cliente_id = cur.lastrowid
+        # la cuenta y sus consentimientos se guardan juntos: si una finalidad no es válida, no se crea nada
+        for finalidad in sorted(finalidades):
+            consentimiento.registrar_evento_consentimiento(con, "cliente", cliente_id, finalidad, "otorgado", canal)
+            consentimiento._efectos_otorgamiento(con, cliente_id, finalidad)
+        con.commit()
+    finally:
+        con.close()
+    log.info(f"cliente registrado id={cliente_id}")
+    registrar_evento(Sesion("cliente", cliente_id, "cliente"), "cuenta.registrar", cliente_id, "exito",
+                     f"consentimientos={','.join(sorted(finalidades)) or 'ninguno'}")
+    return cliente_id
 
 
 def login_cliente(correo, password):
@@ -392,16 +433,18 @@ def _insertar_personal(usuario, password, rol):
     if rol not in ROLES_PERSONAL:
         raise ValueError("Rol no válido")
     con = conectar()
-    con.execute("INSERT INTO administradores (usuario, password_hash, rol) VALUES (?,?,?)",
-                (usuario, hashear_password(password), rol))
+    cur = con.execute("INSERT INTO administradores (usuario, password_hash, rol) VALUES (?,?,?)",
+                      (usuario, hashear_password(password), rol))
     con.commit()
     con.close()
+    return cur.lastrowid
 
 
 @requiere_permiso("roles.gestionar")
 def crear_admin(sesion, usuario, password, rol="soporte"):
     """Crea una cuenta de personal. Sin rol explícito queda con el de menor privilegio."""
-    _insertar_personal(usuario, password, rol)
+    nuevo_id = _insertar_personal(usuario, password, rol)
+    registrar_evento(sesion, "roles.crear_cuenta", f"personal:{nuevo_id}", "exito", f"rol={rol}")
 
 
 def login_admin(usuario, password):
@@ -412,32 +455,73 @@ def login_admin(usuario, password):
 
 
 @requiere_permiso("auditoria.leer")
-def leer_auditoria(sesion):
+def leer_auditoria(sesion, limite=None):
+    """Solo lectura; la propia lectura queda auditada por el decorador."""
     con = conectar()
-    filas = con.execute("SELECT * FROM auditoria ORDER BY id").fetchall()
+    if limite:
+        filas = con.execute("SELECT * FROM (SELECT * FROM auditoria ORDER BY id DESC LIMIT ?) ORDER BY id",
+                            (int(limite),)).fetchall()
+    else:
+        filas = con.execute("SELECT * FROM auditoria ORDER BY id").fetchall()
     con.close()
     return [dict(f) for f in filas]
 
 
+@requiere_permiso("auditoria.purgar")
+def purgar_auditoria(sesion, dias=730):
+    """Elimina lo que superó el plazo y deja constancia del último hash eliminado (la cadena sigue verificable)."""
+    n, hasta_id, ultimo_hash = purgar_vencidos(dias)
+    if n:
+        registrar_evento(sesion, "auditoria.purgar", None, "exito",
+                         f"filas={n} hasta_id={hasta_id} ultimo_hash={ultimo_hash}")
+    return n
+
+
 # ---------- Marketing ----------
 
-def suscribir_boletin(correo):
+def suscribir_boletin(correo, canal="formulario_boletin"):
+    """
+    Suscripción con consentimiento para la finalidad "boletin" (versión vigente del texto).
+    Si el correo es de un cliente, el consentimiento queda a nombre de su cuenta.
+    """
     correo = validar_correo(correo)
     idx = indice_busqueda(correo)
     con = conectar()
-    con.execute("INSERT OR IGNORE INTO boletin_suscriptores (correo_cifrado, correo_indice) VALUES (?,?)",
-                (cifrar(correo, f"boletin.correo:{idx}"), idx))
+    c = con.execute("SELECT id FROM clientes WHERE correo_indice=?", (idx,)).fetchone()
+    titular = ("cliente", c["id"]) if c else ("suscriptor", idx)
+    consentimiento.registrar_evento_consentimiento(con, *titular, "boletin", "otorgado", canal)
+    con.execute("INSERT OR IGNORE INTO boletin_suscriptores (correo_cifrado, correo_indice, cliente_id) VALUES (?,?,?)",
+                (cifrar(correo, f"boletin.correo:{idx}"), idx, c["id"] if c else None))
     con.commit()
     con.close()
+    registrar_evento(None, "consentimiento.suscribir_boletin", None, "exito")
+    return consentimiento.token_baja(idx)
+
+
+def agregar_suscriptor_cliente(con, cliente_id):
+    """El cliente activó el boletín desde su cuenta: se copia su correo a la lista (cifrado con su contexto)."""
+    c = con.execute("SELECT correo_cifrado, correo_indice FROM clientes WHERE id=?", (cliente_id,)).fetchone()
+    idx = c["correo_indice"]
+    correo = descifrar(c["correo_cifrado"], _ctx_cliente("correo", idx))
+    con.execute("INSERT OR REPLACE INTO boletin_suscriptores (correo_cifrado, correo_indice, cliente_id) "
+                "VALUES (?,?,?)", (cifrar(correo, f"boletin.correo:{idx}"), idx, cliente_id))
 
 
 @requiere_permiso("boletin.enviar")
 def correos_para_envio_boletin(sesion):
-    """Se descifra la lista solo al momento de enviar la campaña."""
+    """
+    Se descifra la lista solo al momento de enviar la campaña, y solo los correos con consentimiento
+    vigente para "boletin" (aunque una fila quedara en la tabla, sin consentimiento no se envía).
+    """
     con = conectar()
-    filas = con.execute("SELECT correo_cifrado, correo_indice FROM boletin_suscriptores").fetchall()
+    filas = con.execute("SELECT correo_cifrado, correo_indice, cliente_id FROM boletin_suscriptores").fetchall()
     con.close()
-    return [descifrar(f["correo_cifrado"], f"boletin.correo:{f['correo_indice']}") for f in filas]
+    correos = []
+    for f in filas:
+        titular = ("cliente", f["cliente_id"]) if f["cliente_id"] is not None else ("suscriptor", f["correo_indice"])
+        if consentimiento.vigente(*titular, "boletin"):
+            correos.append(descifrar(f["correo_cifrado"], f"boletin.correo:{f['correo_indice']}"))
+    return correos
 
 
 def seudonimo_cliente(cliente_id):
@@ -446,13 +530,11 @@ def seudonimo_cliente(cliente_id):
 
 
 def guardar_comportamiento(cliente_id, datos):
-    """Solo con consentimiento y bajo seudónimo (la tabla no tiene cliente_id)."""
-    con = conectar()
-    c = con.execute("SELECT consentimiento_analitica FROM clientes WHERE id=?", (cliente_id,)).fetchone()
-    if c is None or not c["consentimiento_analitica"]:
-        con.close()
+    """Solo con consentimiento vigente para "analitica_comportamiento" y bajo seudónimo."""
+    if not consentimiento.vigente("cliente", cliente_id, "analitica_comportamiento"):
         return False
     seud = seudonimo_cliente(cliente_id)
+    con = conectar()
     con.execute("INSERT OR REPLACE INTO comportamiento_compra (seudonimo, datos_cifrado) VALUES (?,?)",
                 (seud, cifrar_json(datos, f"comportamiento.datos:{seud}")))
     con.commit()
@@ -498,19 +580,77 @@ def aplicar_retencion(sesion, dias=365):
     return cur.rowcount
 
 
-@requiere_permiso("cuenta.eliminar", recurso_en_arg1=True, regla=_es_propio)
-def eliminar_cuenta(sesion, cliente_id):
-    """Borra al cliente, sus tarjetas, su comportamiento y su suscripción; los pedidos quedan sin vínculo."""
+def suprimir_cliente(cliente_id, pasarela=None):
+    """
+    Supresión de los datos del cliente (la usan eliminar_cuenta y derechos.ejecutar_supresion):
+      - se borran la cuenta, las tarjetas (y se pide a la pasarela borrar el token), el comportamiento
+        y la suscripción; se revocan sus sesiones;
+      - los pedidos se conservan sin vínculo ni dirección (respaldo contable y tributario);
+      - el historial de consentimientos y las solicitudes quedan bajo seudónimo;
+      - el índice del correo pasa a la lista de supresión, que se reaplica si se restaura un respaldo.
+    """
     con = conectar()
     c = con.execute("SELECT correo_indice FROM clientes WHERE id=?", (cliente_id,)).fetchone()
     if c is None:
         con.close()
         raise AccesoDenegado("Acceso denegado")
+    seud = seudonimo_cliente(cliente_id)
+    tokens = [f["token_pasarela"] for f in
+              con.execute("SELECT token_pasarela FROM tarjetas_guardadas WHERE cliente_id=?", (cliente_id,))]
     con.execute("DELETE FROM tarjetas_guardadas WHERE cliente_id=?", (cliente_id,))
-    con.execute("DELETE FROM comportamiento_compra WHERE seudonimo=?", (seudonimo_cliente(cliente_id),))
-    con.execute("DELETE FROM boletin_suscriptores WHERE correo_indice=?", (c["correo_indice"],))
+    con.execute("DELETE FROM comportamiento_compra WHERE seudonimo=?", (seud,))
+    con.execute("DELETE FROM boletin_suscriptores WHERE correo_indice=? OR cliente_id=?", (c["correo_indice"], cliente_id))
     con.execute("UPDATE pedidos SET cliente_id=NULL, direccion_cifrado=NULL WHERE cliente_id=?", (cliente_id,))
+    consentimiento.seudonimizar_titular(con, cliente_id, seud)
+    con.execute("UPDATE solicitudes_derechos SET cliente_id=NULL, detalle_cifrado=NULL WHERE cliente_id=?", (cliente_id,))
+    con.execute("UPDATE sesiones SET revocada=1 WHERE actor_tipo='cliente' AND actor_id=?", (cliente_id,))
+    con.execute("INSERT OR REPLACE INTO lista_supresion (correo_indice, fecha) VALUES (?,?)", (c["correo_indice"], _ahora()))
     con.execute("DELETE FROM clientes WHERE id=?", (cliente_id,))
     con.commit()
     con.close()
+    if pasarela is not None:
+        for token in tokens:
+            pasarela.eliminar_token(token)
     log.info(f"cuenta eliminada id={cliente_id}")
+    registrar_evento(None, "cuenta.suprimir", cliente_id, "exito",
+                     f"tarjetas={len(tokens)} pedidos_desvinculados=si consentimientos=seudonimizados")
+
+
+@requiere_permiso("cuenta.eliminar", recurso_en_arg1=True, regla=_es_propio)
+def eliminar_cuenta(sesion, cliente_id, pasarela=None):
+    """El propio cliente elimina su cuenta (la web usa el flujo de derechos.py, con verificación)."""
+    suprimir_cliente(cliente_id, pasarela)
+
+
+def reaplicar_supresiones():
+    """Tras restaurar un respaldo: vuelve a suprimir las cuentas que figuran en la lista de supresión."""
+    con = conectar()
+    ids = [f["id"] for f in con.execute(
+        "SELECT id FROM clientes WHERE correo_indice IN (SELECT correo_indice FROM lista_supresion)")]
+    con.close()
+    for cliente_id in ids:
+        suprimir_cliente(cliente_id)
+    return len(ids)
+
+
+# ---------- Ofertas personalizadas (dependen de su propio consentimiento) ----------
+
+OFERTAS_GENERALES = ["Despacho gratis sobre $49.990", "Cyber NortiShop: hasta 30% en tecnología"]
+
+
+@requiere_permiso("cuenta.propia.leer")
+def ofertas(sesion):
+    """
+    Con consentimiento vigente para "ofertas_personalizadas" se usan los productos del historial propio;
+    sin él (o revocado) se muestran solo las ofertas generales. Otro consentimiento no lo reemplaza.
+    """
+    if not consentimiento.vigente("cliente", sesion.id, "ofertas_personalizadas"):
+        return {"personalizadas": False, "ofertas": OFERTAS_GENERALES}
+    con = conectar()
+    filas = con.execute("SELECT codigo, detalle_cifrado FROM pedidos WHERE cliente_id=? ORDER BY id DESC LIMIT 3",
+                        (sesion.id,)).fetchall()
+    con.close()
+    productos = {p["producto"] for f in filas
+                 for p in descifrar_json(f["detalle_cifrado"], _ctx_pedido("detalle", f["codigo"]))}
+    return {"personalizadas": True,
+            "ofertas": [f"10% en accesorios para {p}" for p in sorted(productos)] or OFERTAS_GENERALES}

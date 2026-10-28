@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titulo %}Incidente {{ inc.codigo }}{% endblock %}
+{% block contenido %}
+<h1>Incidente <span class="mono">{{ inc.codigo }}</span></h1>
+<table>
+  <tr><th>Fase</th><td class="estado">{{ inc.fase }}</td></tr>
+  <tr><th>Tipo / severidad</th><td>{{ inc.tipo }} · {{ inc.severidad }}</td></tr>
+  <tr><th>Detectado</th><td>{{ inc.fecha_deteccion }} UTC</td></tr>
+  <tr><th>Descripción</th><td>{{ inc.descripcion }}</td></tr>
+  <tr><th>Datos afectados</th><td>{{ inc.datos_afectados or "sin evaluar" }} · titulares: {{ inc.titulares_afectados if inc.titulares_afectados is not none else "—" }}</td></tr>
+  <tr><th>Notificar</th><td>{% if inc.notificar_agencia is none %}sin decidir{% else %}Agencia: {{ "sí" if inc.notificar_agencia else "no" }} · titulares: {{ "sí" if inc.notificar_titulares else "no" }}{% endif %}
+    {% if inc.fecha_notificacion %} · notificado {{ inc.fecha_notificacion }}{% endif %}</td></tr>
+  <tr><th>Medidas</th><td><pre>{{ inc.medidas or "—" }}</pre></td></tr>
+</table>
+
+{% if inc.fase != 'cerrado' %}
+<div class="rejilla">
+  <form method="post" class="bloque">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="preservar">
+    <strong>1. Preservar evidencia</strong>
+    <p class="texto-consentimiento">Copia de la base con SHA-256 y ancla de la bitácora, antes de contener.</p>
+    <button>Preservar</button>
+  </form>
+  <form method="post" class="bloque">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="fase">
+    <strong>Avanzar fase</strong>
+    <select name="fase">{% for f in fases[fases.index(inc.fase) + 1:] if f != 'cerrado' %}<option>{{ f }}</option>{% endfor %}</select>
+    <label>Medidas adoptadas <textarea name="medidas" maxlength="1000"></textarea></label>
+    <button>Avanzar</button>
+  </form>
+  <form method="post" class="bloque">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="evaluar">
+    <strong>Evaluación de alcance</strong>
+    {% for c in categorias %}<label class="casilla"><input type="checkbox" name="categorias" value="{{ c }}">{{ c }}</label>{% endfor %}
+    <label>Titulares afectados <input name="titulares" type="number" min="0" value="0"></label>
+    <label class="casilla"><input type="checkbox" name="llaves" value="si">Las llaves de cifrado se comprometieron</label>
+    <label>Inicio estimado <input name="inicio" placeholder="AAAA-MM-DD HH:MM"></label>
+    <label>Fin estimado <input name="fin" placeholder="AAAA-MM-DD HH:MM"></label>
+    <button>Registrar evaluación</button>
+  </form>
+</div>
+{% endif %}
+
+<h2>Comprobaciones antes de restablecer</h2>
+<table>
+  <tr><th>Bitácora íntegra</th><td class="{{ 'ok' if recuperacion.bitacora_integra else 'mal' }}">{{ "sí" if recuperacion.bitacora_integra else "no" }}</td></tr>
+  <tr><th>Valores cifrados con llave antigua</th><td>{{ recuperacion.valores_con_llave_antigua }}</td></tr>
+  <tr><th>Permisos suspendidos</th><td>{{ recuperacion.permisos_suspendidos|join(", ") or "ninguno" }}</td></tr>
+  <tr><th>Cuentas deshabilitadas</th><td>{{ recuperacion.cuentas_deshabilitadas }}</td></tr>
+  <tr><th>Alertas altas sin resolver</th><td>{{ recuperacion.alertas_altas_sin_resolver }}</td></tr>
+  <tr><th>Listo para restablecer</th><td class="estado {{ 'ok' if recuperacion.listo else 'mal' }}">{{ "sí" if recuperacion.listo else "no" }}</td></tr>
+</table>
+
+<h2>Borrador de notificación</h2>
+<p>Lo revisa el responsable de comunicación y lo autoriza el encargado de prevención antes de enviarlo.</p>
+<pre>{{ borrador }}</pre>
+{% if inc.fase != 'cerrado' %}
+<div class="rejilla">
+  <form method="post" class="bloque">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="notificar">
+    <button class="secundario">Registrar notificación enviada</button>
+  </form>
+  <form method="post" class="bloque">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="accion" value="cerrar">
+    <label>Lecciones aprendidas (causas y medidas) <textarea name="lecciones" required minlength="30" maxlength="2000"></textarea></label>
+    <button>Cerrar incidente</button>
+  </form>
+</div>
+{% else %}
+<h2>Lecciones aprendidas</h2><pre>{{ inc.lecciones }}</pre>
+{% endif %}
+<p><a href="{{ url_for('seguridad') }}">Volver</a></p>
+{% endblock %}

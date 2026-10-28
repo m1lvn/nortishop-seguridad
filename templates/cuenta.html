@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block contenido %}
+<h1>Mi cuenta</h1>
+<table>
+  <tr><th>Nombre</th><td>{{ datos.nombre }}</td></tr>
+  <tr><th>Correo</th><td>{{ datos.correo }}</td></tr>
+  <tr><th>Teléfono</th><td>{{ datos.telefono or "—" }}</td></tr>
+  <tr><th>Dirección</th><td>{{ datos.direccion or "—" }}</td></tr>
+</table>
+<h2>Ofertas {{ "personalizadas" if ofertas.personalizadas else "generales" }}</h2>
+{% if not ofertas.personalizadas %}<p class="aviso">Ves las ofertas generales porque no has aceptado "ofertas personalizadas".</p>{% endif %}
+<ul>{% for o in ofertas.ofertas %}<li>{{ o }}</li>{% endfor %}</ul>
+<p><a href="{{ url_for('consentimientos') }}">Gestionar consentimientos</a> · <a href="{{ url_for('mis_derechos') }}">Ejercer mis derechos</a></p>
+{% endblock %}

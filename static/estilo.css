@@ -1,0 +1,34 @@
+/* estilo.css: estilos de la interfaz de NortiShop (sin dependencias externas: la CSP solo permite 'self') */
+:root { --borde: #d0d4da; --gris: #f2f3f5; --texto: #1f2328; --suave: #5b636e; --acento: #0b5cad; --ok: #1a7f37; --mal: #b42318; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--texto); background: #fff; }
+.barra { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--borde); background: var(--gris); }
+.barra nav { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.marca { font-weight: 700; color: var(--texto); text-decoration: none; }
+a { color: var(--acento); }
+.quien { color: var(--suave); font-size: 13px; }
+main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 22px; margin: 4px 0 16px; }
+h2 { font-size: 17px; margin: 28px 0 10px; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 14px; }
+th, td { border: 1px solid var(--borde); padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: var(--gris); }
+.tabla { overflow-x: auto; }
+form.bloque { display: grid; gap: 10px; max-width: 520px; padding: 14px; border: 1px solid var(--borde); border-radius: 6px; margin: 10px 0; }
+label { display: grid; gap: 4px; font-size: 14px; }
+label.casilla { display: flex; gap: 8px; align-items: flex-start; }
+input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 4px; }
+button { font: inherit; padding: 6px 12px; border: 1px solid var(--acento); background: var(--acento); color: #fff; border-radius: 4px; cursor: pointer; }
+button.secundario { background: #fff; color: var(--acento); }
+button.peligro { background: var(--mal); border-color: var(--mal); }
+button.enlace { background: none; border: 0; color: var(--acento); padding: 0; text-decoration: underline; }
+.en-linea { display: inline; }
+.aviso { padding: 10px 12px; border-left: 4px solid var(--acento); background: var(--gris); margin: 10px 0; }
+.error { border-left-color: var(--mal); }
+.texto-consentimiento { font-size: 13px; color: var(--suave); margin: 0 0 0 26px; }
+.estado { font-weight: 600; }
+.estado-otorgado, .ok { color: var(--ok); }
+.estado-revocado, .mal { color: var(--mal); }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
+pre { white-space: pre-wrap; background: var(--gris); padding: 12px; border-radius: 6px; font-size: 13px; }
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }

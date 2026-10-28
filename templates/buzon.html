@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Buzón simulado{% endblock %}
+{% block contenido %}
+<h1>Buzón de correo (simulado)</h1>
+<p class="aviso">Solo en modo demo. Reemplaza a tu bandeja de entrada real, porque el proyecto no tiene servidor de correo.
+Solo muestra los mensajes enviados a tu propio correo.</p>
+{% for m in mensajes %}
+<div class="aviso"><strong>{{ m.asunto }}</strong><br><small>{{ m.fecha }} UTC</small><p>{{ m.cuerpo }}</p></div>
+{% else %}<p>No hay mensajes.</p>{% endfor %}
+{% endblock %}
