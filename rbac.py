@@ -58,12 +58,16 @@ def _auditar(sesion, permiso, recurso, resultado):
     con.close()
 
 
-def requiere_permiso(permiso, recurso_en_arg1=False):
+def requiere_permiso(permiso, recurso_en_arg1=False, regla=None):
+    """
+    regla(sesion, *args) es un control por recurso (p. ej. "solo lo propio"). Se evalúa ANTES
+    de auditar, para que la bitácora diga "denegado" y no "permitido" cuando la regla falla.
+    """
     def decorador(fn):
         @wraps(fn)
         def envoltura(sesion, *args, **kwargs):
             recurso = args[0] if (recurso_en_arg1 and args) else None
-            if not tiene_permiso(sesion, permiso):
+            if not tiene_permiso(sesion, permiso) or (regla is not None and not regla(sesion, *args)):
                 _auditar(sesion, permiso, recurso, "denegado")
                 raise AccesoDenegado("Acceso denegado")
             _auditar(sesion, permiso, recurso, "permitido")
