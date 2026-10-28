@@ -416,7 +416,7 @@ def ver_incidente(codigo):
             incidentes.avanzar_fase(g.sesion, codigo, f.get("fase"), f.get("medidas") or None)
         elif accion == "evaluar":
             incidentes.registrar_evaluacion(g.sesion, codigo, f.getlist("categorias"), _entero(f.get("titulares") or 0),
-                                            f.get("llaves") == "si", f.get("inicio") or None, f.get("fin") or None)
+                                            f.get("legibles") == "si", f.get("inicio") or None, f.get("fin") or None)
         elif accion == "notificar":
             incidentes.registrar_notificacion(g.sesion, codigo)
         elif accion == "cerrar":

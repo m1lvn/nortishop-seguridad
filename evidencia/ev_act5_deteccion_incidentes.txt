@@ -16,10 +16,10 @@ Alertas generadas (una alerta no es un incidente hasta que seguridad la analiza)
   4  | consulta_masiva        | alta      | personal:2 (soporte) descifró 30 registros en 1 hora                | abierta
   5  | denegaciones_repetidas | media     | personal:2 acumula 5 accesos denegados en 10 minutos                | abierta
   seguridad descarta alerta de cambio de privilegios         -> OK 
-  seguridad escala la consulta masiva a incidente            -> OK INC-20261028-72FE
+  seguridad escala la consulta masiva a incidente            -> OK INC-20261028-41FC
 
 Contención (preservando evidencia primero):
-  preservar_evidencia -> bd_20261028T043100Z.db sha256=66ab86de73e94805b1f697d2... ancla auditoría id=159
+  preservar_evidencia -> bd_20261028T043834Z.db sha256=03fb2606dc808996937c7f10... ancla auditoría id=159
   deshabilitar cuenta personal de soporte                    -> OK 
   soporte (sesión ya iniciada) lee un contacto               -> AccesoDenegado: Acceso denegado
   soporte intenta iniciar sesión                             -> None (cuenta deshabilitada)
@@ -30,10 +30,10 @@ Contención (preservando evidencia primero):
 Evaluación y decisión de notificación:
   registrar_evaluacion                                       -> OK {'notificar_agencia': True, 'notificar_titulares': False}
   criterios (evaluar_notificacion):
-    ['correo'], llaves comprometidas=False, titulares=100 -> {'notificar_agencia': False, 'notificar_titulares': False}
-    ['correo', 'telefono'], llaves comprometidas=True, titulares=30 -> {'notificar_agencia': True, 'notificar_titulares': False}
-    ['historial_compras', 'tarjeta_ultimos4'], llaves comprometidas=True, titulares=200 -> {'notificar_agencia': True, 'notificar_titulares': True}
-    ['credenciales'], llaves comprometidas=False, titulares=3 -> {'notificar_agencia': True, 'notificar_titulares': False}
+    ['correo'], datos legibles=False, titulares=100 -> {'notificar_agencia': False, 'notificar_titulares': False}
+    ['correo', 'telefono'], datos legibles=True, titulares=30 -> {'notificar_agencia': True, 'notificar_titulares': False}
+    ['historial_compras', 'tarjeta_ultimos4'], datos legibles=True, titulares=200 -> {'notificar_agencia': True, 'notificar_titulares': True}
+    ['credenciales'], datos legibles=False, titulares=3 -> {'notificar_agencia': True, 'notificar_titulares': False}
 
 Erradicación y recuperación:
   fase -> erradicacion
@@ -44,14 +44,14 @@ Erradicación y recuperación:
 Notificación (borrador para los titulares):
   Estimado/a cliente de NortiShop:
   1. Qué ocurrió: personal:2 (soporte) descifró 30 registros en 1 hora
-  2. Fecha de detección: 2026-10-28 04:31:00 (UTC). Período en que ocurrió: entre 2026-10-28 09:00 y 2026-10-28 10:00.
+  2. Fecha de detección: 2026-10-28 04:38:34 (UTC). Período en que ocurrió: entre 2026-10-28 09:00 y 2026-10-28 10:00.
   3. Datos personales potencialmente afectados: correo, nombre, telefono. Titulares afectados (estimación): 30.
   4. Posibles consecuencias: uso de los datos para correos o llamadas fraudulentas (phishing) y, si hubo credenciales, acceso no autorizado a la cuenta.
   5. Medidas adoptadas: Evidencia preservada; cuenta de soporte deshabilitada; permiso contacto.cliente.leer suspendido; Se revisaron los permisos de soporte y se exigió MFA al personal; Cuenta de soporte rehabilitada con contraseña nueva; permiso reactivado.
   6. Recomendaciones: cambie su contraseña de NortiShop y la de otros sitios donde use la misma; desconfíe de mensajes que pidan datos de pago o claves; NortiShop nunca le pedirá su contraseña.
-  7. Contacto para consultas y seguimiento: privacidad@nortishop.cl (indique el código INC-20261028-72FE).
+  7. Contacto para consultas y seguimiento: privacidad@nortishop.cl (indique el código INC-20261028-41FC).
   cerrar sin registrar la notificación                       -> ValueError: No se puede cerrar: falta registrar la notificación; el incidente no llegó a la fase de lecciones aprendidas
   cerrar con lecciones aprendidas                            -> OK 
   codigo            | tipo                    | severidad | fase    | notificar_agencia | notificar_titulares | fecha_notificacion  | fecha_cierre       
   ------------------+-------------------------+-----------+---------+-------------------+---------------------+---------------------+--------------------
-  INC-20261028-72FE | acceso_indebido_interno | alta      | cerrado | 1                 | 0                   | 2026-10-28 04:31:00 | 2026-10-28 04:31:00
+  INC-20261028-41FC | acceso_indebido_interno | alta      | cerrado | 1                 | 0                   | 2026-10-28 04:38:34 | 2026-10-28 04:38:34

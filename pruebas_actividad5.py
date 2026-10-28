@@ -497,7 +497,7 @@ class PruebasIncidentes(Base5):
 
     def test_I06_evaluacion_notificacion_y_cierre(self):
         self.assertEqual(incidentes.evaluar_notificacion({"correo"}, False, 100),
-                         {"notificar_agencia": False, "notificar_titulares": False})     # cifrado y llaves a salvo
+                         {"notificar_agencia": False, "notificar_titulares": False})     # solo datos cifrados, llaves a salvo
         self.assertEqual(incidentes.evaluar_notificacion({"correo", "historial_compras"}, True, 100),
                          {"notificar_agencia": True, "notificar_titulares": True})
         self.assertEqual(incidentes.evaluar_notificacion({"credenciales"}, False, 3),

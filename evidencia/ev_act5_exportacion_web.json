@@ -1,14 +1,14 @@
 {
   "formato": "nortishop-export/1.0",
-  "generado": "2026-10-28 04:30:32",
-  "solicitud": "SD-BC0C7DE618",
+  "generado": "2026-10-28 04:38:57",
+  "solicitud": "SD-5BA53229E3",
   "cuenta": {
     "nombre": "Camila Rojas",
     "correo": "camila.rojas@correo.cl",
     "telefono": "+56 9 1234 5678",
     "direccion": "Av. Los Leones 1234, Providencia",
     "nortipuntos": 0,
-    "mayoria_edad_declarada": "2026-10-28 04:30:20"
+    "mayoria_edad_declarada": "2026-10-28 04:38:45"
   },
   "tarjetas": [
     {
@@ -18,8 +18,8 @@
   ],
   "pedidos": [
     {
-      "codigo": "NS-9477CDD5C70E",
-      "fecha": "2026-10-28 04:30:20",
+      "codigo": "NS-40580A9C7D73",
+      "fecha": "2026-10-28 04:38:45",
       "estado": "entregado",
       "monto": 39990,
       "tarjeta": "**** 1111",
@@ -39,21 +39,21 @@
       "finalidad": "boletin",
       "version": 1,
       "accion": "otorgado",
-      "fecha": "2026-10-28 04:30:20",
+      "fecha": "2026-10-28 04:38:45",
       "canal": "web"
     },
     {
       "finalidad": "analitica_comportamiento",
       "version": 1,
       "accion": "otorgado",
-      "fecha": "2026-10-28 04:30:30",
+      "fecha": "2026-10-28 04:38:55",
       "canal": "web"
     },
     {
       "finalidad": "boletin",
       "version": 1,
       "accion": "revocado",
-      "fecha": "2026-10-28 04:30:30",
+      "fecha": "2026-10-28 04:38:55",
       "canal": "web"
     }
   ]

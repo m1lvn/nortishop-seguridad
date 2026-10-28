@@ -253,9 +253,9 @@ linea("\nEvaluación y decisión de notificación:")
 intentar("registrar_evaluacion", incidentes.registrar_evaluacion, seguridad, inc, ["correo", "telefono", "nombre"], 30, True,
          "2026-10-28 09:00", "2026-10-28 10:00")
 linea("  criterios (evaluar_notificacion):")
-for cats, llaves, n in [({"correo"}, False, 100), ({"correo", "telefono"}, True, 30),
+for cats, legibles, n in [({"correo"}, False, 100), ({"correo", "telefono"}, True, 30),
                         ({"historial_compras", "tarjeta_ultimos4"}, True, 200), ({"credenciales"}, False, 3)]:
-    linea(f"    {sorted(cats)}, llaves comprometidas={llaves}, titulares={n} -> {incidentes.evaluar_notificacion(cats, llaves, n)}")
+    linea(f"    {sorted(cats)}, datos legibles={legibles}, titulares={n} -> {incidentes.evaluar_notificacion(cats, legibles, n)}")
 
 linea("\nErradicación y recuperación:")
 for fase, medida in [("erradicacion", "Se revisaron los permisos de soporte y se exigió MFA al personal"),

@@ -97,26 +97,28 @@ def avanzar_fase(sesion, codigo, fase, medidas=None):
     registrar_evento(sesion, "incidentes.fase", codigo, "exito", f"fase={fase}")
 
 
-def evaluar_notificacion(categorias, llaves_comprometidas, titulares_afectados):
+def evaluar_notificacion(categorias, datos_legibles, titulares_afectados):
     """
     Criterio del plan (Ley 21.719, art. 14 sexies):
-      - a la Agencia: si hay riesgo razonable para los titulares. Si solo se filtró información cifrada y las
-        llaves NO se comprometieron, los datos no son inteligibles y el riesgo se considera no razonable
-        (se documenta igual la decisión). Credenciales o datos en claro: siempre hay riesgo.
+      - a la Agencia: si hay riesgo razonable para los titulares. Hay riesgo si quien accedió pudo leer los datos
+        (datos_legibles): los vio en claro (p. ej. un acceso indebido a través de la aplicación, que descifra)
+        o se llevó datos cifrados junto con las llaves. Si solo obtuvo información cifrada y las llaves no se
+        comprometieron, el riesgo se considera no razonable (la decisión se documenta igual). Las credenciales
+        siempre implican riesgo.
       - a los titulares: además, cuando los datos se refieren a obligaciones de carácter económico, financiero,
         bancario o comercial (historial de compras, tarjeta, token de pago).
     """
     categorias = set(categorias)
     if categorias - set(CATEGORIAS_DATOS):
         raise ValueError("Categoría de datos desconocida")
-    riesgo = bool(categorias) and (llaves_comprometidas or "credenciales" in categorias) and titulares_afectados > 0
+    riesgo = bool(categorias) and (datos_legibles or "credenciales" in categorias) and titulares_afectados > 0
     return {"notificar_agencia": riesgo, "notificar_titulares": riesgo and bool(categorias & CATEGORIAS_ECONOMICAS)}
 
 
 @requiere_permiso("incidentes.gestionar", recurso_en_arg1=True)
-def registrar_evaluacion(sesion, codigo, categorias, titulares_afectados, llaves_comprometidas,
+def registrar_evaluacion(sesion, codigo, categorias, titulares_afectados, datos_legibles,
                          inicio_estimado=None, fin_estimado=None):
-    decision = evaluar_notificacion(categorias, llaves_comprometidas, int(titulares_afectados))
+    decision = evaluar_notificacion(categorias, datos_legibles, int(titulares_afectados))
     con = db.conectar()
     inc = _incidente(con, codigo)
     con.execute("UPDATE incidentes SET datos_afectados=?, titulares_afectados=?, inicio_estimado=?, fin_estimado=?, "

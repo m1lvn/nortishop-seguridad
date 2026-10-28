@@ -78,6 +78,6 @@ ok
 test_I07_rotacion_de_llave_y_comprobaciones_de_recuperacion (pruebas_actividad5.PruebasIncidentes.test_I07_rotacion_de_llave_y_comprobaciones_de_recuperacion) ... ok
 
 ----------------------------------------------------------------------
-Ran 73 tests in 3.328s
+Ran 73 tests in 2.149s
 
 OK

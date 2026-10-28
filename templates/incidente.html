@@ -34,7 +34,7 @@
     {% set marcadas = (inc.datos_afectados or "").split(",") %}
     {% for c in categorias %}<label class="casilla"><input type="checkbox" name="categorias" value="{{ c }}"{{ " checked" if c in marcadas }}>{{ c }}</label>{% endfor %}
     <label>Titulares afectados <input name="titulares" type="number" min="0" value="{{ inc.titulares_afectados or 0 }}"></label>
-    <label class="casilla"><input type="checkbox" name="llaves" value="si">Las llaves de cifrado se comprometieron</label>
+    <label class="casilla"><input type="checkbox" name="legibles" value="si">Quien accedió pudo leer los datos (en claro o con las llaves de cifrado)</label>
     <label>Inicio estimado <input name="inicio" placeholder="AAAA-MM-DD HH:MM" value="{{ inc.inicio_estimado or '' }}"></label>
     <label>Fin estimado <input name="fin" placeholder="AAAA-MM-DD HH:MM" value="{{ inc.fin_estimado or '' }}"></label>
     <button>Registrar evaluación</button>
