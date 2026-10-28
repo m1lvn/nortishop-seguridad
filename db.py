@@ -256,6 +256,9 @@ CREATE TABLE IF NOT EXISTS permisos_suspendidos (
 def conectar():
     con = sqlite3.connect(RUTA_BD)
     con.row_factory = sqlite3.Row
+    # lo que se borra (supresión, retención, purga de la bitácora) se sobrescribe con ceros en el archivo,
+    # en vez de quedar recuperable en páginas libres
+    con.execute("PRAGMA secure_delete = ON")
     return con
 
 

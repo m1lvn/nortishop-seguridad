@@ -301,7 +301,7 @@ def peticion(etiqueta, metodo, ruta_api, token=None, **kw):
         if "token" in datos_r:
             datos_r = {**datos_r, "token": "<oculto>"}
         cuerpo = json.dumps(datos_r, ensure_ascii=False)
-    linea(f"  {etiqueta:52} {metodo:6} {ruta_api:38} -> {r.status_code} {cuerpo[:70]}")
+    linea(f"  {etiqueta:52} {metodo:6} {ruta_api:38} -> {r.status_code} {cuerpo[:100]}")
     return r
 
 

@@ -3,9 +3,9 @@
 ==============================================================================
 a) Acceso / portabilidad
   crear_solicitud con contraseña incorrecta                  -> AccesoDenegado: Acceso denegado
-  crear_solicitud('portabilidad') con contraseña             -> OK SD-24BDB5A981
-  correo recibido: "NortiShop: código de verificación de la solicitud SD-24BDB5A981"
-  en la base solo queda el HMAC del código: c21bdde1edcbaeee4db32403...
+  crear_solicitud('portabilidad') con contraseña             -> OK SD-E1541C0E25
+  correo recibido: "NortiShop: código de verificación de la solicitud SD-E1541C0E25"
+  en la base solo queda el HMAC del código: cb585cace5ccb72dac9bd898...
   exportar antes de verificar                                -> ValueError: La solicitud no está lista para exportar o ya fue respondida
   Beto intenta verificar la solicitud de Ana                 -> AccesoDenegado: Acceso denegado
   verificar_identidad con código incorrecto                  -> ValueError: El código es incorrecto o venció
@@ -36,13 +36,13 @@ c) Supresión
   bandeja de privacidad (sin nombres ni correos):
   codigo        | tipo      | estado        | fecha_recepcion     | plazo_vence         | dias_restantes | titular     
   --------------+-----------+---------------+---------------------+---------------------+----------------+-------------
-  SD-E629DAEC7C | supresion | en_evaluacion | 2026-10-28 04:38:30 | 2026-11-27 04:38:30 | 29             | bd34990418e1
+  SD-2D62F963BA | supresion | en_evaluacion | 2026-10-28 04:51:50 | 2026-11-27 04:51:50 | 29             | bd34990418e1
   soporte intenta resolver la supresión                      -> AccesoDenegado: Acceso denegado
   privacidad aprueba la supresión                            -> OK cerrada
   después de la supresión:
     clientes con id de Ana:          0
     tarjetas guardadas:              0
-    pedido 1 (contable):             {'codigo': 'NS-7D0A66C478A8', 'cliente_id': None, 'direccion_cifrado': None, 'monto': 39990, 'estado': 'entregado'}
+    pedido 1 (contable):             {'codigo': 'NS-115EA17E3ADE', 'cliente_id': None, 'direccion_cifrado': None, 'monto': 39990, 'estado': 'entregado'}
     consentimientos seudonimizados:  5
     lista de supresión (respaldos):  1 índice(s)
     login de Ana:                    None
@@ -50,8 +50,8 @@ c) Supresión
 Seguimiento de todas las solicitudes (estado y fechas de cada etapa):
   codigo        | tipo          | estado  | fecha_recepcion     | fecha_verificacion  | fecha_respuesta     | fecha_cierre        | cliente_id
   --------------+---------------+---------+---------------------+---------------------+---------------------+---------------------+-----------
-  SD-24BDB5A981 | portabilidad  | cerrada | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | None      
-  SD-671851C371 | rectificacion | cerrada | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | None      
-  SD-D30B07B8D9 | rectificacion | cerrada | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | 2026-10-28 04:38:29 | None      
-  SD-537C177180 | supresion     | cerrada | 2026-10-28 04:38:30 | 2026-10-28 04:38:30 | 2026-10-28 04:38:30 | 2026-10-28 04:38:30 | None      
-  SD-E629DAEC7C | supresion     | cerrada | 2026-10-28 04:38:30 | 2026-10-28 04:38:30 | 2026-10-28 04:38:30 | 2026-10-28 04:38:30 | None      
+  SD-E1541C0E25 | portabilidad  | cerrada | 2026-10-28 04:51:48 | 2026-10-28 04:51:48 | 2026-10-28 04:51:48 | 2026-10-28 04:51:48 | None      
+  SD-77EB670213 | rectificacion | cerrada | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | None      
+  SD-E50EE655A3 | rectificacion | cerrada | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | None      
+  SD-59A3CBBA7B | supresion     | cerrada | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | None      
+  SD-2D62F963BA | supresion     | cerrada | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | None      

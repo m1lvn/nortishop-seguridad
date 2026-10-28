@@ -26,7 +26,7 @@ test_T23_bitacora_registra_accesos_sin_datos_personales (pruebas_seguridad.Prueb
 test_T24_bitacora_inmutable (pruebas_seguridad.PruebasSeguridad.test_T24_bitacora_inmutable) ... ok
 test_T25_filtro_de_logs (pruebas_seguridad.PruebasSeguridad.test_T25_filtro_de_logs) ... ok
 test_T26_registro_y_login_no_dejan_correos_en_logs (pruebas_seguridad.PruebasSeguridad.test_T26_registro_y_login_no_dejan_correos_en_logs) ... ok
-test_A06_purga_solo_lo_vencido_y_la_cadena_sigue_verificable (pruebas_actividad5.PruebaPurgaAuditoria.test_A06_purga_solo_lo_vencido_y_la_cadena_sigue_verificable) ... ok
+test_A06_purga_segura_solo_de_lo_vencido_y_la_cadena_sigue_verificable (pruebas_actividad5.PruebaPurgaAuditoria.test_A06_purga_segura_solo_de_lo_vencido_y_la_cadena_sigue_verificable) ... ok
 test_A01_operaciones_relevantes_quedan_registradas_sin_datos_personales (pruebas_actividad5.PruebasAuditoria.test_A01_operaciones_relevantes_quedan_registradas_sin_datos_personales) ... ok
 test_A02_cadena_detecta_alteraciones_aunque_se_quiten_los_triggers (pruebas_actividad5.PruebasAuditoria.test_A02_cadena_detecta_alteraciones_aunque_se_quiten_los_triggers) ... ok
 test_A03_borrar_una_fila_intermedia_rompe_la_cadena (pruebas_actividad5.PruebasAuditoria.test_A03_borrar_una_fila_intermedia_rompe_la_cadena) ... ok
@@ -78,6 +78,6 @@ ok
 test_I07_rotacion_de_llave_y_comprobaciones_de_recuperacion (pruebas_actividad5.PruebasIncidentes.test_I07_rotacion_de_llave_y_comprobaciones_de_recuperacion) ... ok
 
 ----------------------------------------------------------------------
-Ran 73 tests in 2.149s
+Ran 73 tests in 2.458s
 
 OK

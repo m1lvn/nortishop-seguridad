@@ -12,7 +12,7 @@ Finalidades y base legal:
 Registro de Ana marcando solo 'boletin' (las demás casillas vienen desmarcadas):
   finalidad                | estado       | version | fecha              
   -------------------------+--------------+---------+--------------------
-  boletin                  | otorgado     | 1       | 2026-10-28 04:38:28
+  boletin                  | otorgado     | 1       | 2026-10-28 04:51:47
   analitica_comportamiento | sin_registro | None    | None               
   ofertas_personalizadas   | sin_registro | None    | None               
 
@@ -48,20 +48,20 @@ Nueva versión del texto con cambio material:
 Historial de Ana (consultar_historial):
   fecha               | finalidad                | accion   | version | canal
   --------------------+--------------------------+----------+---------+------
-  2026-10-28 04:38:28 | boletin                  | otorgado | 1       | web  
-  2026-10-28 04:38:28 | analitica_comportamiento | otorgado | 1       | web  
-  2026-10-28 04:38:28 | analitica_comportamiento | revocado | 1       | web  
-  2026-10-28 04:38:28 | boletin                  | revocado | 1       | web  
-  2026-10-28 04:38:28 | boletin                  | otorgado | 1       | web  
+  2026-10-28 04:51:47 | boletin                  | otorgado | 1       | web  
+  2026-10-28 04:51:47 | analitica_comportamiento | otorgado | 1       | web  
+  2026-10-28 04:51:47 | analitica_comportamiento | revocado | 1       | web  
+  2026-10-28 04:51:47 | boletin                  | revocado | 1       | web  
+  2026-10-28 04:51:47 | boletin                  | otorgado | 1       | web  
 
 Filas crudas de la tabla consentimientos (sin datos personales: titular por id):
   id | titular_tipo | titular_ref | finalidad                | version | accion   | fecha               | canal
   ---+--------------+-------------+--------------------------+---------+----------+---------------------+------
-  1  | cliente      | 1           | boletin                  | 1       | otorgado | 2026-10-28 04:38:28 | web  
-  2  | cliente      | 1           | analitica_comportamiento | 1       | otorgado | 2026-10-28 04:38:28 | web  
-  3  | cliente      | 1           | analitica_comportamiento | 1       | revocado | 2026-10-28 04:38:28 | web  
-  4  | cliente      | 1           | boletin                  | 1       | revocado | 2026-10-28 04:38:28 | web  
-  5  | cliente      | 1           | boletin                  | 1       | otorgado | 2026-10-28 04:38:28 | web  
+  1  | cliente      | 1           | boletin                  | 1       | otorgado | 2026-10-28 04:51:47 | web  
+  2  | cliente      | 1           | analitica_comportamiento | 1       | otorgado | 2026-10-28 04:51:47 | web  
+  3  | cliente      | 1           | analitica_comportamiento | 1       | revocado | 2026-10-28 04:51:47 | web  
+  4  | cliente      | 1           | boletin                  | 1       | revocado | 2026-10-28 04:51:47 | web  
+  5  | cliente      | 1           | boletin                  | 1       | otorgado | 2026-10-28 04:51:47 | web  
 
 Intentos de modificar el historial directamente en la base:
   UPDATE consentimientos SET accion='otorgado' WHERE id=2    -> IntegrityError: el historial de consentimientos no se modifica

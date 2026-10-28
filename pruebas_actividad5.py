@@ -403,7 +403,7 @@ class PruebasAuditoria(Base5):
 class PruebaPurgaAuditoria(unittest.TestCase):
     """Base separada: los eventos antiguos tienen que estar al comienzo de la cadena."""
 
-    def test_A06_purga_solo_lo_vencido_y_la_cadena_sigue_verificable(self):
+    def test_A06_purga_segura_solo_de_lo_vencido_y_la_cadena_sigue_verificable(self):
         fd, ruta = tempfile.mkstemp(suffix=".db")
         os.close(fd)
         original_ruta, original_ahora = db.RUTA_BD, auditoria._ahora
@@ -420,6 +420,8 @@ class PruebaPurgaAuditoria(unittest.TestCase):
             seguridad = ns.login_admin("seba_seguridad", CLAVE)
             self.assertEqual(ns.purgar_auditoria(seguridad), 4)
             self.assertTrue(auditoria.verificar_cadena()["ok"])
+            with open(ruta, "rb") as f:                              # secure_delete: no quedan restos en el archivo
+                self.assertNotIn(b"sistema.prueba", f.read())
             con = db.conectar()
             with self.assertRaises(sqlite3.DatabaseError):
                 con.execute("DELETE FROM auditoria")                 # lo reciente sigue protegido

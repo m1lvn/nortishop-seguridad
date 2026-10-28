@@ -6,12 +6,12 @@
   login de marketing (API)                             POST   /api/v1/sesiones                       -> 200 {"expira_en_segundos": 1800, "token": "<oculto>"}
   sin token                                            GET    /api/v1/consentimientos                -> 401 {"error": "Se requiere iniciar sesión"}
   token inventado                                      GET    /api/v1/consentimientos                -> 401 {"error": "Se requiere iniciar sesión"}
-  Carla lee sus propios datos                          GET    /api/v1/clientes/3                     -> 200 {"correo": "carla@prueba.cl", "direccion": null, "nombre": "Carla Prue
+  Carla lee sus propios datos                          GET    /api/v1/clientes/3                     -> 200 {"correo": "carla@prueba.cl", "direccion": null, "nombre": "Carla Prueba", "telefono": null}
   Carla pide los datos de Beto (IDOR)                  GET    /api/v1/clientes/2                     -> 403 {"error": "Acceso denegado"}
   Carla lee la auditoría                               GET    /api/v1/auditoria                      -> 403 {"error": "Acceso denegado"}
   marketing lee la auditoría                           GET    /api/v1/auditoria                      -> 403 {"error": "Acceso denegado"}
   marketing ejecuta contención                         POST   /api/v1/contencion                     -> 403 {"error": "Acceso denegado"}
-  Carla rectifica con campo extra 'rol'                POST   /api/v1/derechos                       -> 400 {"error": "Solo se pueden rectificar: nombre, teléfono, dirección y co
+  Carla rectifica con campo extra 'rol'                POST   /api/v1/derechos                       -> 400 {"error": "Solo se pueden rectificar: nombre, teléfono, dirección y correo"}
   Carla otorga con versión no numérica                 POST   /api/v1/consentimientos/boletin        -> 400 {"error": "Se esperaba un valor numérico"}
   cookie de sesión usada en la API                     GET    /api/v1/consentimientos                -> 401 {"error": "Se requiere iniciar sesión"}
   formulario web sin token CSRF                        POST   /consentimientos/boletin/otorgar       -> 400

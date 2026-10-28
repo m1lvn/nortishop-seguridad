@@ -1,14 +1,14 @@
 {
   "formato": "nortishop-export/1.0",
-  "generado": "2026-10-28 04:38:29",
-  "solicitud": "SD-24BDB5A981",
+  "generado": "2026-10-28 04:51:48",
+  "solicitud": "SD-E1541C0E25",
   "cuenta": {
     "nombre": "Ana Prueba",
     "correo": "ana@prueba.cl",
     "telefono": "+56 9 1111 2222",
     "direccion": "Av. Los Leones 1234, Providencia",
     "nortipuntos": 0,
-    "mayoria_edad_declarada": "2026-10-28 04:38:28"
+    "mayoria_edad_declarada": "2026-10-28 04:51:47"
   },
   "tarjetas": [
     {
@@ -18,8 +18,8 @@
   ],
   "pedidos": [
     {
-      "codigo": "NS-7D0A66C478A8",
-      "fecha": "2026-10-28 04:38:28",
+      "codigo": "NS-115EA17E3ADE",
+      "fecha": "2026-10-28 04:51:48",
       "estado": "pagado",
       "monto": 39990,
       "tarjeta": "**** 1111",
@@ -39,35 +39,35 @@
       "finalidad": "boletin",
       "version": 1,
       "accion": "otorgado",
-      "fecha": "2026-10-28 04:38:28",
+      "fecha": "2026-10-28 04:51:47",
       "canal": "web"
     },
     {
       "finalidad": "analitica_comportamiento",
       "version": 1,
       "accion": "otorgado",
-      "fecha": "2026-10-28 04:38:28",
+      "fecha": "2026-10-28 04:51:47",
       "canal": "web"
     },
     {
       "finalidad": "analitica_comportamiento",
       "version": 1,
       "accion": "revocado",
-      "fecha": "2026-10-28 04:38:28",
+      "fecha": "2026-10-28 04:51:47",
       "canal": "web"
     },
     {
       "finalidad": "boletin",
       "version": 1,
       "accion": "revocado",
-      "fecha": "2026-10-28 04:38:28",
+      "fecha": "2026-10-28 04:51:47",
       "canal": "web"
     },
     {
       "finalidad": "boletin",
       "version": 1,
       "accion": "otorgado",
-      "fecha": "2026-10-28 04:38:28",
+      "fecha": "2026-10-28 04:51:47",
       "canal": "web"
     }
   ]
