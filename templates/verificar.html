@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Solicitud {{ s.codigo }}{% endblock %}
+{% block contenido %}
+<h1>Solicitud <span class="mono">{{ s.codigo }}</span> · {{ s.tipo }}</h1>
+<table>
+  <tr><th>Estado</th><td class="estado">{{ s.estado|replace('_', ' ') }}</td></tr>
+  <tr><th>Recibida</th><td>{{ s.fecha_recepcion }} UTC</td></tr>
+  <tr><th>Identidad verificada</th><td>{{ s.fecha_verificacion or "pendiente" }}</td></tr>
+  <tr><th>Plazo de respuesta</th><td>{{ s.plazo_vence }} UTC</td></tr>
+  {% if s.resultado %}<tr><th>Respuesta</th><td>{{ s.resultado }}</td></tr>{% endif %}
+</table>
+
+{% if s.estado == 'recibida' %}
+<form method="post" class="bloque" autocomplete="off">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p>Enviamos un código de 6 dígitos a tu correo registrado. Vence en 10 minutos; tienes 3 intentos.</p>
+  <label>Código <input name="codigo_correo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></label>
+  <button>Verificar identidad</button>
+</form>
+{% elif s.estado == 'en_evaluacion' and s.tipo in ('acceso', 'portabilidad') %}
+<form method="post" class="bloque" action="{{ url_for('descargar_datos', codigo=s.codigo) }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p>Tu identidad está verificada. La copia se genera una sola vez, en formato JSON, y no queda guardada en el servidor.</p>
+  <button>Descargar mis datos (JSON)</button>
+</form>
+{% elif s.estado == 'en_evaluacion' and s.tipo == 'rectificacion' %}
+<form method="post" class="bloque" autocomplete="off">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="etapa" value="correo_nuevo">
+  <p>Para cambiar el correo, ingresa el código que enviamos al <strong>correo nuevo</strong>.</p>
+  <label>Código <input name="codigo_correo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></label>
+  <button>Confirmar correo nuevo</button>
+</form>
+{% elif s.estado == 'en_evaluacion' and s.tipo == 'supresion' %}
+<p class="aviso">Identidad verificada. El equipo de privacidad está evaluando si existe alguna obligación de conservar datos.</p>
+{% endif %}
+{% if s.estado == 'recibida' or (s.estado == 'en_evaluacion' and s.tipo == 'rectificacion') %}
+<form method="post" class="en-linea">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="etapa" value="reenviar">
+  <button class="secundario">Enviar un código nuevo</button>
+</form>
+{% endif %}
+<p><a href="{{ url_for('mis_derechos') }}">Volver a mis solicitudes</a></p>
+{% endblock %}

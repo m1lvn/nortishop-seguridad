@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titulo %}Seguridad{% endblock %}
+{% block contenido %}
+<h1>Seguridad: auditoría, alertas e incidentes</h1>
+<p class="aviso {{ '' if integridad.ok else 'error' }}">Integridad de la bitácora:
+  {% if integridad.ok %}<span class="ok">correcta</span> ({{ integridad.filas }} registros, cadena HMAC verificada)
+  {% else %}<span class="mal">ROTA desde el registro {{ integridad.error_en }}</span>. Se generó una alerta crítica.{% endif %}</p>
+
+<h2>Alertas</h2>
+<div class="tabla"><table>
+  <tr><th>#</th><th>Fecha</th><th>Regla</th><th>Severidad</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr>
+  {% for a in alertas %}
+  <tr><td>{{ a.id }}</td><td>{{ a.fecha }}</td><td>{{ a.regla }}</td><td>{{ a.severidad }}</td><td>{{ a.descripcion }}</td>
+    <td>{{ a.estado }}</td>
+    <td>{% if a.estado in ('abierta', 'en_analisis') %}
+      <form method="post" action="{{ url_for('gestionar_alerta', alerta_id=a.id, accion='escalar') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="tipo" value="{{ a.regla }}">
+        <select name="severidad">{% for s in ('baja', 'media', 'alta', 'critica') %}<option {{ 'selected' if s == a.severidad }}>{{ s }}</option>{% endfor %}</select>
+        <input name="descripcion" value="{{ a.descripcion }}" maxlength="1000">
+        <button>Escalar a incidente</button></form>
+      <form method="post" action="{{ url_for('gestionar_alerta', alerta_id=a.id, accion='descartada') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><button class="secundario">Descartar (falso positivo)</button></form>
+    {% elif a.incidente_id %}incidente #{{ a.incidente_id }}{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7">Sin alertas.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Incidentes</h2>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Detectado</th><th>Tipo</th><th>Severidad</th><th>Fase</th></tr>
+  {% for i in incidentes %}
+  <tr><td><a class="mono" href="{{ url_for('ver_incidente', codigo=i.codigo) }}">{{ i.codigo }}</a></td><td>{{ i.fecha_deteccion }}</td>
+    <td>{{ i.tipo }}</td><td>{{ i.severidad }}</td><td>{{ i.fase }}</td></tr>
+  {% else %}<tr><td colspan="5">Sin incidentes.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Contención rápida</h2>
+<form method="post" class="bloque" action="{{ url_for('contencion') }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Acción
+    <select name="accion">
+      <option value="revocar_sesiones">Revocar sesiones (cliente:ID, personal:ID o todas)</option>
+      <option value="deshabilitar_cuenta">Deshabilitar cuenta (cliente:ID o personal:ID)</option>
+      <option value="habilitar_cuenta">Habilitar cuenta</option>
+      <option value="suspender_permiso">Suspender permiso (p. ej. derechos.solicitar)</option>
+      <option value="reactivar_permiso">Reactivar permiso</option>
+    </select></label>
+  <label>Objetivo <input name="objetivo" required maxlength="64"></label>
+  <label>Incidente (opcional) <input name="incidente" maxlength="32"></label>
+  <button class="peligro">Ejecutar</button>
+</form>
+
+<h2>Últimos eventos de auditoría</h2>
+<p>Últimos 15 eventos, solo lectura. Esta consulta también queda registrada (la bitácora completa está en la API <span class="mono">/api/v1/auditoria</span>).</p>
+<div class="tabla"><table class="compacta">
+  <tr><th>#</th><th>Fecha</th><th>Actor</th><th>Rol</th><th>Operación</th><th>Categoría</th><th>Recurso</th><th>Resultado</th><th>Canal</th><th>Origen</th><th>Detalle</th></tr>
+  {% for e in eventos|reverse %}
+  <tr><td>{{ e.id }}</td><td>{{ e.fecha }}</td><td>{{ e.actor_tipo or "—" }}{% if e.actor_id %}:{{ e.actor_id }}{% endif %}</td><td>{{ e.rol or "—" }}</td>
+    <td>{{ e.permiso }}</td><td>{{ e.categoria }}</td><td>{{ e.recurso or "—" }}</td><td>{{ e.resultado }}</td>
+    <td>{{ e.canal }}</td><td>{{ e.origen or "—" }}</td><td>{{ e.detalle or "" }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

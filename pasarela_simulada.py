@@ -37,6 +37,10 @@ class PasarelaPago:
         resp["firma"] = firmar_respuesta(self._llave_firma, resp)
         return resp
 
+    def eliminar_token(self, token):
+        """Al suprimir la cuenta, NortiShop pide a la pasarela borrar la tarjeta de su bóveda."""
+        return self._boveda.pop(token, None) is not None
+
     @staticmethod
     def _marca(numero):
         if numero.startswith("4"):

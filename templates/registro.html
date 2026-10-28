@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Crear cuenta{% endblock %}
+{% block contenido %}
+<h1>Crear cuenta</h1>
+<form method="post" class="bloque" autocomplete="off">
+  <label>Nombre <input name="nombre" required maxlength="80"></label>
+  <label>Correo <input name="correo" type="email" required maxlength="254"></label>
+  <label>Contraseña (10 a 128 caracteres) <input name="password" type="password" required minlength="10" maxlength="128"></label>
+  <label>Teléfono (opcional) <input name="telefono" maxlength="16"></label>
+  <label>Dirección de despacho (opcional) <input name="direccion" maxlength="200"></label>
+
+  <label class="casilla"><input type="checkbox" name="mayor_edad" value="si" required>
+    Declaro ser mayor de 18 años. NortiShop no crea cuentas para menores de edad.</label>
+
+  <p><strong>Usos opcionales de tus datos</strong>. Cada uno es independiente y puedes cambiarlo después en
+  Mi cuenta &gt; Consentimientos. Para comprar no necesitas aceptar ninguno.</p>
+  {% for finalidad, t in textos.items() %}
+  <label class="casilla"><input type="checkbox" name="consiente_{{ finalidad }}" value="{{ t.version }}">
+    {{ descripciones[finalidad] }} (versión {{ t.version }})</label>
+  <p class="texto-consentimiento">{{ t.texto }}</p>
+  {% endfor %}
+  <button>Crear cuenta</button>
+</form>
+{% endblock %}

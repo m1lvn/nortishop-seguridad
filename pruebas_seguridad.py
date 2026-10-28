@@ -53,8 +53,8 @@ class Base(unittest.TestCase):
         self.marketing = ns.login_admin("mar_marketing", CLAVE)
         # clientes: Ana (acepta analítica, con teléfono) y Beto (sin consentimiento)
         self.id_ana = ns.registrar_cliente("Ana Prueba", "ana@prueba.cl", CLAVE, telefono="+56 9 1111 2222",
-                                           consentimiento_analitica=True)
-        self.id_beto = ns.registrar_cliente("Beto Prueba", "beto@prueba.cl", CLAVE, telefono="+56 9 3333 4444")
+                                           consentimiento_analitica=True, declara_mayor_edad=True)
+        self.id_beto = ns.registrar_cliente("Beto Prueba", "beto@prueba.cl", CLAVE, telefono="+56 9 3333 4444", declara_mayor_edad=True)
         self.ana = ns.login_cliente("ana@prueba.cl", CLAVE)
         self.beto = ns.login_cliente("beto@prueba.cl", CLAVE)
         # un pedido de invitado (id 1)
@@ -92,7 +92,7 @@ class PruebasSeguridad(Base):
 
     # ---------- Minimización y validación ----------
     def test_T01_registro_con_datos_minimos(self):
-        i = ns.registrar_cliente("Carla", "carla@prueba.cl", CLAVE)
+        i = ns.registrar_cliente("Carla", "carla@prueba.cl", CLAVE, declara_mayor_edad=True)
         f = self.sql("SELECT telefono_cifrado, direccion_cifrado FROM clientes WHERE id=?", (i,))[0]
         self.assertIsNone(f["telefono_cifrado"])
         self.assertIsNone(f["direccion_cifrado"])
@@ -101,12 +101,12 @@ class PruebasSeguridad(Base):
         columnas = [c["name"] for c in self.sql("PRAGMA table_info(clientes)")]
         self.assertNotIn("rut_cifrado", columnas)
         with self.assertRaises(TypeError):
-            ns.registrar_cliente("Carla", "carla@prueba.cl", CLAVE, rut="12.345.678-5")
+            ns.registrar_cliente("Carla", "carla@prueba.cl", CLAVE, rut="12.345.678-5", declara_mayor_edad=True)
 
     def test_T03_entradas_invalidas_sin_exponer_valor(self):
-        casos = [lambda: ns.registrar_cliente("X", "esto-no-es-correo", CLAVE),
-                 lambda: ns.registrar_cliente("X", "x@prueba.cl", "corta1"),
-                 lambda: ns.registrar_cliente("X", "x@prueba.cl", CLAVE, telefono="abc-telefono-malo")]
+        casos = [lambda: ns.registrar_cliente("X", "esto-no-es-correo", CLAVE, declara_mayor_edad=True),
+                 lambda: ns.registrar_cliente("X", "x@prueba.cl", "corta1", declara_mayor_edad=True),
+                 lambda: ns.registrar_cliente("X", "x@prueba.cl", CLAVE, telefono="abc-telefono-malo", declara_mayor_edad=True)]
         valores = ["esto-no-es-correo", "corta1", "abc-telefono-malo"]
         for caso, valor in zip(casos, valores):
             with self.assertRaises(ValueError) as cm:
@@ -332,7 +332,7 @@ class PruebasSeguridad(Base):
         log.addHandler(captura)
         log.setLevel(logging.INFO)
         try:
-            i = ns.registrar_cliente("Diego", "diego.log@prueba.cl", CLAVE)
+            i = ns.registrar_cliente("Diego", "diego.log@prueba.cl", CLAVE, declara_mayor_edad=True)
             ns.login_cliente("diego.log@prueba.cl", CLAVE)
             for _ in range(ns.MAX_INTENTOS):
                 ns.login_cliente("diego.log@prueba.cl", "incorrecta_1234")

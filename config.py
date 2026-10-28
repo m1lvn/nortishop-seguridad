@@ -53,6 +53,9 @@ LLAVE_INDICE = _leer_llave("NORTISHOP_LLAVE_INDICE")
 # secreto compartido con la pasarela para verificar la firma de sus respuestas
 LLAVE_PASARELA = _leer_llave("NORTISHOP_LLAVE_PASARELA")
 
+# llave del HMAC encadenado de la bitácora de auditoría (detecta filas alteradas o borradas)
+LLAVE_AUDITORIA = _leer_llave("NORTISHOP_LLAVE_AUDITORIA")
+
 # factor de costo de bcrypt para las contraseñas
 BCRYPT_COSTO = 12
 

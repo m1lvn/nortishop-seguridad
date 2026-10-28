@@ -42,12 +42,12 @@ pasarela = PasarelaPago(LLAVE_PASARELA)
 titulo("1. REGISTRO DE CLIENTE (sin RUT; teléfono y dirección opcionales; todo cifrado)")
 cid = ns.registrar_cliente("Camila Rojas", "camila.rojas@correo.cl", "MiClave#2026",
                            telefono="+56 9 1234 5678", direccion="Av. Los Leones 1234, Providencia",
-                           consentimiento_analitica=True)
+                           consentimiento_analitica=True, declara_mayor_edad=True)
 print(f"Cliente registrado con id {cid} (con consentimiento de analítica)")
-cid2 = ns.registrar_cliente("Pedro Soto", "pedro.soto@correo.cl", "OtraClave#2026")
+cid2 = ns.registrar_cliente("Pedro Soto", "pedro.soto@correo.cl", "OtraClave#2026", declara_mayor_edad=True)
 print(f"Cliente registrado con id {cid2} (solo datos mínimos: teléfono y dirección = NULL)")
 try:
-    ns.registrar_cliente("X", "correo-invalido", "MiClave#2026")
+    ns.registrar_cliente("X", "correo-invalido", "MiClave#2026", declara_mayor_edad=True)
 except ValueError as e:
     print("Registro con correo inválido ->", e, "(el mensaje no repite el valor)")
 

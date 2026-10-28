@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Consentimientos{% endblock %}
+{% block contenido %}
+<h1>Mis consentimientos</h1>
+<p>Cada finalidad se acepta o revoca por separado. Aceptar una no habilita las demás. La compra y el despacho no
+dependen de tu consentimiento: se basan en el contrato de compraventa.</p>
+{% for e in estado %}
+<form method="post" class="bloque" action="{{ url_for('cambiar_consentimiento', finalidad=e.finalidad, accion='revocar' if e.estado in ('otorgado', 'requiere_renovacion') else 'otorgar') }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="version" value="{{ textos[e.finalidad].version }}">
+  <div><strong>{{ e.descripcion }}</strong><br>
+    Estado: <span class="estado estado-{{ e.estado }}">{{ e.estado|replace('_', ' ') }}</span>
+    {% if e.fecha %}· desde {{ e.fecha }} UTC · texto versión {{ e.version }}{% endif %}</div>
+  <p class="texto-consentimiento">Texto vigente (versión {{ textos[e.finalidad].version }}): {{ textos[e.finalidad].texto }}</p>
+  {% if e.estado in ('otorgado', 'requiere_renovacion') %}
+    <button class="peligro">Revocar</button>
+  {% else %}
+    <button>Aceptar versión {{ textos[e.finalidad].version }}</button>
+  {% endif %}
+</form>
+{% endfor %}
+<h2>Historial de cambios</h2>
+<div class="tabla"><table>
+  <tr><th>Fecha (UTC)</th><th>Finalidad</th><th>Acción</th><th>Versión</th><th>Canal</th></tr>
+  {% for h in historial|reverse %}
+  <tr><td>{{ h.fecha }}</td><td>{{ h.finalidad }}</td><td class="estado-{{ h.accion }}">{{ h.accion }}</td><td>{{ h.version }}</td><td>{{ h.canal }}</td></tr>
+  {% else %}<tr><td colspan="5">Sin registros.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

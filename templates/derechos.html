@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Mis derechos{% endblock %}
+{% block contenido %}
+<h1>Ejercer mis derechos</h1>
+<p>Para proteger tu cuenta te pediremos tu contraseña y un código que enviaremos a tu correo registrado.
+No pedimos documentos ni datos adicionales. Respondemos dentro de 30 días corridos.</p>
+<div class="rejilla">
+  <form method="post" class="bloque" action="{{ url_for('solicitar_derecho') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <strong>Acceso o portabilidad</strong>
+    <label>Tipo
+      <select name="tipo">
+        <option value="acceso">Acceso: mis datos y cómo se tratan</option>
+        <option value="portabilidad">Portabilidad: mis datos en formato reutilizable (JSON)</option>
+      </select></label>
+    <label>Contraseña actual <input name="password" type="password" required></label>
+    <button>Solicitar copia</button>
+  </form>
+  <form method="post" class="bloque" action="{{ url_for('solicitar_derecho') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="tipo" value="rectificacion">
+    <strong>Rectificación</strong>
+    <label>Nombre <input name="nombre" maxlength="80"></label>
+    <label>Correo <input name="correo" type="email" maxlength="254"></label>
+    <label>Teléfono <input name="telefono" maxlength="16"></label>
+    <label>Dirección <input name="direccion" maxlength="200"></label>
+    <label>Contraseña actual <input name="password" type="password" required></label>
+    <button>Solicitar corrección</button>
+  </form>
+  <form method="post" class="bloque" action="{{ url_for('solicitar_derecho') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="tipo" value="supresion">
+    <strong>Supresión</strong>
+    <p class="texto-consentimiento">Se eliminan tu cuenta, tarjetas guardadas, suscripción y preferencias. Los pedidos
+    se conservan sin tus datos por obligación tributaria. Si tienes pedidos en curso, la solicitud se rechazará con
+    su fundamento.</p>
+    <label>Contraseña actual <input name="password" type="password" required></label>
+    <button class="peligro">Solicitar supresión</button>
+  </form>
+</div>
+<h2>Mis solicitudes</h2>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Recibida</th><th>Plazo</th><th>Respuesta</th><th>Acción</th></tr>
+  {% for s in solicitudes %}
+  <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
+    <td>{{ s.fecha_recepcion }}</td><td>{{ s.plazo_vence }}{% if s.prorrogada %} (prorrogado){% endif %}</td>
+    <td>{{ s.resultado or "—" }}</td>
+    <td>{% if s.estado in ('recibida', 'en_evaluacion') %}<a href="{{ url_for('verificar_derecho', codigo=s.codigo) }}">Continuar</a>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7">No has hecho solicitudes.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

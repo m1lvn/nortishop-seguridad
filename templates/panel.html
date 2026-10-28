@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titulo %}Panel{% endblock %}
+{% block contenido %}
+<h1>Panel del personal</h1>
+<p>Rol: <strong>{{ sesion.rol }}</strong>. Cada pantalla y cada llamada a la API comprueban el permiso en el servidor;
+los enlaces que no corresponden a tu rol responden "Acceso denegado".</p>
+<ul>
+  {% if sesion.rol == 'privacidad' %}<li><a href="{{ url_for('bandeja_privacidad') }}">Solicitudes de derechos</a></li>{% endif %}
+  {% if sesion.rol == 'seguridad' %}<li><a href="{{ url_for('seguridad') }}">Auditoría, alertas e incidentes</a></li>{% endif %}
+</ul>
+{% endblock %}
