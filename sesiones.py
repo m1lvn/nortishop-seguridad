@@ -64,10 +64,14 @@ def csrf(token):
 
 
 def cerrar(token):
+    sesion = resolver(token)
+    if sesion is None:
+        return
     con = conectar()
     con.execute("UPDATE sesiones SET revocada=1 WHERE token_hash=?", (_hash(token),))
     con.commit()
     con.close()
+    registrar_evento(sesion, "sesion.cerrar", None, "exito")
 
 
 def revocar_de_actor(actor_tipo, actor_id):

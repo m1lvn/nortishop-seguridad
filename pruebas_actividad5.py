@@ -309,6 +309,11 @@ class PruebasDerechos(Base5):
         self.assertEqual(derechos.resolver_supresion(self.privacidad, codigo, False,
                                                      "Existe un reclamo pendiente ante el SERNAC sobre esta cuenta."), "rechazada")
         self.assertEqual(self.sql("SELECT COUNT(*) FROM clientes WHERE id=?", (self.id_ana,))[0][0], 1)
+        # art. 11: la respuesta indica el fundamento y el plazo para reclamar ante la Agencia
+        resultado = self.sql("SELECT resultado FROM solicitudes_derechos WHERE codigo=?", (codigo,))[0][0]
+        self.assertTrue(resultado.startswith("Existe un reclamo pendiente"))
+        self.assertIn("30 días hábiles", resultado)
+        self.assertIn("30 días hábiles", notificador.ultimo_para("ana@prueba.cl")["cuerpo"])
 
     def test_D11_bandeja_de_privacidad_sin_datos_personales(self):
         self.solicitud_verificada(self.ana, "ana@prueba.cl", "supresion")
@@ -571,6 +576,7 @@ class PruebasElusion(Base5):
         self.assertEqual(self.api("GET", "/api/v1/consentimientos", token=t).status_code, 200)
         self.assertEqual(self.api("DELETE", "/api/v1/sesiones", token=t).status_code, 204)
         self.assertEqual(self.api("GET", "/api/v1/consentimientos", token=t).status_code, 401)
+        self.assertEqual([tuple(f) for f in self.sql("SELECT canal FROM auditoria WHERE permiso='sesion.cerrar'")], [("api",)])
 
     def test_W02_idor_datos_de_otro_cliente(self):
         t = self.token(correo="ana@prueba.cl", password=CLAVE)

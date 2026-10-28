@@ -3,9 +3,9 @@
 ==============================================================================
 a) Acceso / portabilidad
   crear_solicitud con contraseña incorrecta                  -> AccesoDenegado: Acceso denegado
-  crear_solicitud('portabilidad') con contraseña             -> OK SD-E1541C0E25
-  correo recibido: "NortiShop: código de verificación de la solicitud SD-E1541C0E25"
-  en la base solo queda el HMAC del código: cb585cace5ccb72dac9bd898...
+  crear_solicitud('portabilidad') con contraseña             -> OK SD-E141D4C055
+  correo recibido: "NortiShop: código de verificación de la solicitud SD-E141D4C055"
+  en la base solo queda el HMAC del código: de6069b4333abc1c7b641272...
   exportar antes de verificar                                -> ValueError: La solicitud no está lista para exportar o ya fue respondida
   Beto intenta verificar la solicitud de Ana                 -> AccesoDenegado: Acceso denegado
   verificar_identidad con código incorrecto                  -> ValueError: El código es incorrecto o venció
@@ -31,18 +31,18 @@ b) Rectificación
 
 c) Supresión
   supresión con un pedido en curso                           -> OK cerrada
-  respuesta: Existen pedidos en curso (pagados o despachados). Sus datos se necesitan para cumplir el contrato de compraventa y el despacho. Puede volver a solicitar la supresión cuando los pedidos se hayan entregado.
+  respuesta: Existen pedidos en curso (pagados o despachados). Sus datos se necesitan para cumplir el contrato de compraventa y el despacho. Puede volver a solicitar la supresión cuando los pedidos se hayan entregado. Si no está de acuerdo, puede presentar una reclamación ante la Agencia de Protección de Datos Personales dentro de 30 días hábiles desde esta respuesta.
   supresión sin pedidos en curso                             -> OK en_evaluacion
   bandeja de privacidad (sin nombres ni correos):
   codigo        | tipo      | estado        | fecha_recepcion     | plazo_vence         | dias_restantes | titular     
   --------------+-----------+---------------+---------------------+---------------------+----------------+-------------
-  SD-2D62F963BA | supresion | en_evaluacion | 2026-10-28 04:51:50 | 2026-11-27 04:51:50 | 29             | bd34990418e1
+  SD-D28CFEDBD4 | supresion | en_evaluacion | 2026-10-28 04:56:27 | 2026-11-27 04:56:27 | 29             | bd34990418e1
   soporte intenta resolver la supresión                      -> AccesoDenegado: Acceso denegado
   privacidad aprueba la supresión                            -> OK cerrada
   después de la supresión:
     clientes con id de Ana:          0
     tarjetas guardadas:              0
-    pedido 1 (contable):             {'codigo': 'NS-115EA17E3ADE', 'cliente_id': None, 'direccion_cifrado': None, 'monto': 39990, 'estado': 'entregado'}
+    pedido 1 (contable):             {'codigo': 'NS-80376D1118F9', 'cliente_id': None, 'direccion_cifrado': None, 'monto': 39990, 'estado': 'entregado'}
     consentimientos seudonimizados:  5
     lista de supresión (respaldos):  1 índice(s)
     login de Ana:                    None
@@ -50,8 +50,8 @@ c) Supresión
 Seguimiento de todas las solicitudes (estado y fechas de cada etapa):
   codigo        | tipo          | estado  | fecha_recepcion     | fecha_verificacion  | fecha_respuesta     | fecha_cierre        | cliente_id
   --------------+---------------+---------+---------------------+---------------------+---------------------+---------------------+-----------
-  SD-E1541C0E25 | portabilidad  | cerrada | 2026-10-28 04:51:48 | 2026-10-28 04:51:48 | 2026-10-28 04:51:48 | 2026-10-28 04:51:48 | None      
-  SD-77EB670213 | rectificacion | cerrada | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | None      
-  SD-E50EE655A3 | rectificacion | cerrada | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | 2026-10-28 04:51:49 | None      
-  SD-59A3CBBA7B | supresion     | cerrada | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | None      
-  SD-2D62F963BA | supresion     | cerrada | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | 2026-10-28 04:51:50 | None      
+  SD-E141D4C055 | portabilidad  | cerrada | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | None      
+  SD-8ED5A49141 | rectificacion | cerrada | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | None      
+  SD-CF9E007F8A | rectificacion | cerrada | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | 2026-10-28 04:56:25 | None      
+  SD-C0641B4810 | supresion     | cerrada | 2026-10-28 04:56:26 | 2026-10-28 04:56:26 | 2026-10-28 04:56:26 | 2026-10-28 04:56:26 | None      
+  SD-D28CFEDBD4 | supresion     | cerrada | 2026-10-28 04:56:27 | 2026-10-28 04:56:27 | 2026-10-28 04:56:27 | 2026-10-28 04:56:27 | None      

@@ -41,6 +41,9 @@ PRORROGA_DIAS = 30
 MINUTOS_CODIGO = 10
 INTENTOS_CODIGO = 3
 ENVIOS_CODIGO = 3                 # códigos que se pueden emitir por solicitud y propósito (incluye el primero)
+# art. 11: al denegar, el responsable debe indicar al titular el plazo para reclamar ante la Agencia
+AVISO_RECLAMO = (" Si no está de acuerdo, puede presentar una reclamación ante la Agencia de Protección de Datos "
+                 "Personales dentro de 30 días hábiles desde esta respuesta.")
 VERSION_EXPORTACION = "nortishop-export/1.0"
 
 
@@ -61,6 +64,9 @@ def _cambiar_estado(con, solicitud, nuevo, **campos):
     if nuevo not in TRANSICIONES[solicitud["estado"]]:
         raise ValueError("Transición de estado no permitida")
     campos[_COLUMNA_FECHA[nuevo]] = _ahora()
+    if nuevo == "rechazada":
+        motivo = (campos.get("resultado") or "Solicitud rechazada").rstrip().rstrip(".")
+        campos["resultado"] = motivo + "." + AVISO_RECLAMO
     asignaciones = ", ".join(f"{c}=?" for c in campos)
     con.execute(f"UPDATE solicitudes_derechos SET estado=?, {asignaciones} WHERE id=?",
                 (nuevo, *campos.values(), solicitud["id"]))
@@ -432,7 +438,7 @@ def resolver_supresion(sesion, codigo, aprobar, motivo=None, pasarela=None):
         _cambiar_estado(con, s, "cerrada")
         con.commit()
         con.close()
-        notificador.enviar(destino, f"NortiShop: respuesta a la solicitud {codigo}", f"Tu solicitud fue rechazada: {motivo.strip()}")
+        notificador.enviar(destino, f"NortiShop: respuesta a la solicitud {codigo}", f"Tu solicitud fue rechazada: {s['resultado']}")
         registrar_evento(sesion, "derechos.suprimir", codigo, "fallido", "rechazada_con_fundamento")
         return "rechazada"
     if _pedidos_en_curso(con, s["cliente_id"]):
