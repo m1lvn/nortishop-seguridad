@@ -289,7 +289,9 @@ def solicitar_derecho():
 @con_sesion
 def verificar_derecho(codigo):
     if request.method == "POST":
-        if request.form.get("etapa") == "correo_nuevo":
+        if request.form.get("etapa") == "reenviar":
+            derechos.reenviar_codigo(g.sesion, codigo)
+        elif request.form.get("etapa") == "correo_nuevo":
             derechos.confirmar_correo_nuevo(g.sesion, codigo, request.form.get("codigo_correo", ""))
         else:
             derechos.verificar_identidad(g.sesion, codigo, request.form.get("codigo_correo", ""))
@@ -486,6 +488,13 @@ def api_derechos():
 @con_sesion
 def api_verificar(codigo):
     return jsonify({"estado": derechos.verificar_identidad(g.sesion, codigo, _datos().get("codigo_correo", ""))})
+
+
+@app.route("/api/v1/derechos/<codigo>/codigo", methods=["POST"])
+@con_sesion
+def api_reenviar(codigo):
+    derechos.reenviar_codigo(g.sesion, codigo)
+    return jsonify({"enviado": True})
 
 
 @app.route("/api/v1/derechos/<codigo>/correo-nuevo", methods=["POST"])

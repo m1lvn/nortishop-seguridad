@@ -29,6 +29,7 @@ _CATEGORIAS = [
     ("derechos.exportar", "exportacion"),
     ("derechos.suprimir", "supresion"),
     ("cuenta.eliminar", "supresion"),
+    ("cuenta.suprimir", "supresion"),
     ("derechos.rectificar", "modificacion"),
     ("derechos.", "derechos"),
     ("roles.", "administracion"),

@@ -40,6 +40,7 @@ PLAZO_DIAS = 30
 PRORROGA_DIAS = 30
 MINUTOS_CODIGO = 10
 INTENTOS_CODIGO = 3
+ENVIOS_CODIGO = 3                 # códigos que se pueden emitir por solicitud y propósito (incluye el primero)
 VERSION_EXPORTACION = "nortishop-export/1.0"
 
 
@@ -220,6 +221,38 @@ def _evaluar(con, s):
             "compraventa y el despacho. Puede volver a solicitar la supresión cuando los pedidos se hayan entregado."))
         return _cambiar_estado(con, s, "cerrada"), None
     return s, None      # acceso y portabilidad: listos para exportar; supresión: espera la evaluación de privacidad
+
+
+@requiere_permiso("derechos.solicitar")
+def reenviar_codigo(sesion, codigo):
+    """Emite un código nuevo si el anterior venció o se agotó (máximo ENVIOS_CODIGO por propósito)."""
+    con = conectar()
+    s = _solicitud_propia(con, sesion, codigo)
+    if s["estado"] == "recibida":
+        proposito, destino = "titular", _correo_registrado(con, sesion.id)
+    elif s["tipo"] == "rectificacion" and s["estado"] == "en_evaluacion":
+        proposito = "correo_nuevo"
+        destino = descifrar_json(s["detalle_cifrado"], _ctx_solicitud(s["codigo"]))["correo"]
+    else:
+        con.close()
+        raise ValueError("La solicitud no espera un código")
+    emitidos = con.execute("SELECT COUNT(*) FROM verificaciones_identidad WHERE solicitud_id=? AND proposito=?",
+                           (s["id"], proposito)).fetchone()[0]
+    if emitidos >= ENVIOS_CODIGO:
+        if s["estado"] == "recibida":
+            s = _cambiar_estado(con, s, "rechazada", resultado="No se pudo verificar la identidad del solicitante")
+        else:
+            s = _cambiar_estado(con, s, "rechazada", detalle_cifrado=None,
+                                resultado="No se pudo confirmar el correo nuevo; los datos no se modificaron")
+        _cambiar_estado(con, s, "cerrada")
+        con.commit()
+        con.close()
+        registrar_evento(sesion, "derechos.reenviar_codigo", codigo, "fallido", "envios_agotados")
+        raise ValueError("Se agotaron los envíos de código; la solicitud se cerró. Puedes crear una nueva.")
+    _emitir_codigo(con, s, proposito, destino)
+    con.commit()
+    con.close()
+    registrar_evento(sesion, "derechos.reenviar_codigo", codigo, "exito", f"proposito={proposito}")
 
 
 @requiere_permiso("derechos.solicitar")

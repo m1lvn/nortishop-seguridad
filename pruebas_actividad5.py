@@ -190,6 +190,20 @@ class PruebasDerechos(Base5):
         with self.assertRaises(ValueError):
             derechos.verificar_identidad(self.ana, codigo, codigo_enviado("ana@prueba.cl"))
 
+    def test_D03b_reenvio_de_codigo_limitado(self):
+        codigo = derechos.crear_solicitud(self.ana, "acceso", CLAVE)
+        self.sql("UPDATE verificaciones_identidad SET expira='2020-01-01 00:00:00'")
+        derechos.reenviar_codigo(self.ana, codigo)                      # el anterior venció: se emite otro
+        self.assertEqual(derechos.verificar_identidad(self.ana, codigo, codigo_enviado("ana@prueba.cl")), "en_evaluacion")
+        otra = derechos.crear_solicitud(self.ana, "portabilidad", CLAVE)
+        with self.assertRaises(AccesoDenegado):
+            derechos.reenviar_codigo(self.beto, otra)                   # solicitud ajena
+        derechos.reenviar_codigo(self.ana, otra)
+        derechos.reenviar_codigo(self.ana, otra)
+        with self.assertRaises(ValueError):
+            derechos.reenviar_codigo(self.ana, otra)                    # cuarto envío: se cierra
+        self.assertEqual(self.sql("SELECT estado FROM solicitudes_derechos WHERE codigo=?", (otra,))[0][0], "cerrada")
+
     def test_D04_exportacion_estructurada_sin_datos_internos_ni_de_terceros(self):
         self.pedido_de_ana()
         codigo, estado = self.solicitud_verificada(self.ana, "ana@prueba.cl", "portabilidad")

@@ -3,3 +3,5 @@
 *.db
 __pycache__/
 .venv/
+# copias de la base preservadas como evidencia de un incidente (contienen datos cifrados)
+evidencia_incidentes/

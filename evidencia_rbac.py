@@ -66,6 +66,6 @@ for f in ns.leer_analitica(marketing):
 ns.leer_analitica(marketing)
 print("== auditoria:")
 for a in ns.leer_auditoria(admin):
-    if a["permiso"] != "roles.gestionar":
+    if a["resultado"] in ("permitido", "denegado") and a["permiso"] != "roles.gestionar":   # solo controles RBAC
         print("  ", a["rol"], a["permiso"], a["recurso"], a["resultado"])
 os.remove(ruta)
