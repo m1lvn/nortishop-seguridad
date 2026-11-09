@@ -4,6 +4,7 @@ Implementación en Python de los controles de protección de datos del caso Nort
 - **Actividad 2:** hashing, cifrado y tokenización.
 - **Actividad 4:** minimización, seudonimización, anonimización y RBAC.
 - **Actividad 5:** consentimiento por finalidad, ejercicio de derechos, auditoría protegida y respuesta a incidentes, con una interfaz web y una API.
+- **Actividad 6:** mecanismos de derechos completos: canal y modelo de seguimiento, verificación de identidad, acceso y portabilidad, rectificación con registro del cambio, supresión con acta (eliminado / bloqueado por ley / propagado), oposición y bloqueo temporal.
 
 **Ramo:** Seguridad y Protección de Datos – Universidad del Desarrollo
 **Integrantes:** Ignacia Castillo, Milan Kurte, Francisco Polo
@@ -37,6 +38,18 @@ Detalles del cifrado:
 | `app.py`, `templates/`, `static/` | Pantallas web (cookie segura + CSRF) y API JSON `/api/v1` (solo Bearer). Usan las mismas funciones de servicio, así que los controles no se pueden eludir llamando directo a la API. |
 | `notificador.py` | Correo **simulado** (buzón en memoria): el proyecto no tiene servidor SMTP. |
 
+## Actividad 6: mecanismos de derechos
+
+| Mecanismo | Implementación |
+|---|---|
+| Canal y modelo | Web (Mi cuenta > Mis derechos) y API (`POST /api/v1/derechos`). `solicitudes_derechos` guarda canal, tipo, tratamiento o solicitud asociada, estado, fecha de cada etapa, plazo (30 días + 1 prórroga), resultado fundamentado y acta. Privacidad hace el seguimiento en una bandeja con seudónimo. |
+| Verificación de identidad | Contraseña reingresada + código de un solo uso al correo registrado (HMAC, 10 min, 3 intentos, 3 envíos). Cambiar el correo exige un segundo código al correo nuevo. Sin verificar no se ejecuta nada. |
+| Acceso y portabilidad | JSON `nortishop-export/1.0` con todos los datos del titular y solo los suyos (lista blanca). Acceso agrega la información del tratamiento y el historial de rectificaciones, oposiciones y bloqueos; portabilidad entrega solo lo aportado por el titular. |
+| Rectificación | `registro_rectificaciones`: una fila por campo con valor anterior y nuevo cifrados, fecha, solicitud y destinatarios a los que se comunicó (despacho, boletín). Inmutable (trigger). Aviso al correo anterior y al nuevo. |
+| Supresión | `suprimir_cliente` devuelve un acta: **elimina** cuenta, tarjetas, boletín, analítica, registros de rectificación, oposiciones, bloqueos y direcciones; **bloquea** los pedidos por 6 años (obligación tributaria) sin vínculo con la persona, fuera de las vistas operativas; **propaga** a la pasarela (borra tokens) y a la lista de supresión de respaldos. |
+| Oposición | Nuevo tratamiento `encuesta_satisfaccion` (interés legítimo, art. 8 a). La oposición exige motivo; privacidad la acoge o la rechaza con motivos imperiosos. Acogida, el titular sale de `correos_para_encuesta`. |
+| Bloqueo | Art. 8 ter: asociado a una rectificación, supresión u oposición en curso. Mientras está vigente se suspenden boletín, analítica, ofertas, encuesta y consultas de soporte; los datos solo se almacenan. Se levanta solo al cerrarse la solicitud asociada. |
+
 ## Requisitos
 - Python 3.10 o superior
 - Dependencias: `pip install -r requirements.txt` (se recomienda un entorno virtual: `python -m venv .venv`)
@@ -44,9 +57,10 @@ Detalles del cifrado:
 ## Cómo ejecutar
 ```
 python generar_llaves.py                       # 1. crea el .env (o agrega las llaves que falten)
-python -m unittest pruebas_seguridad pruebas_actividad5 -v   # 2. pruebas (base temporal)
+python -m unittest pruebas_seguridad pruebas_actividad5 pruebas_actividad6 -v   # 2. pruebas (base temporal)
 python demo.py                                 # 3. demo de las actividades 2 y 4 (recrea nortishop.db)
 python evidencia_act5.py                       # 4. evidencia de la actividad 5 (base temporal)
+python evidencia_act6.py                       #    evidencia de la actividad 6 (base temporal)
 python ver_bd.py                               # 5. base de datos en crudo
 python verificar_secretos.py                   # 6. llaves no expuestas, base sin datos en claro, bitácora íntegra
 ```
@@ -85,8 +99,10 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 | `rotar_llaves.py` | Recifra todos los datos con la llave más reciente (recuperación ante incidentes) |
 | `pruebas_seguridad.py` | 26 pruebas de la Actividad 4 |
 | `pruebas_actividad5.py` | 47 pruebas de la Actividad 5: consentimiento (C), derechos (D), auditoría (A), incidentes (I) e intentos de elusión (W) |
+| `pruebas_actividad6.py` | 19 pruebas de la Actividad 6, una o más solicitudes concretas por mecanismo (R1 canal, R2 verificación y no verificados, R3 acceso/portabilidad, R4 rectificación, R5 supresión, R6 oposición y bloqueo) |
 | `demo.py`, `evidencia_rbac.py` | Demostraciones de las actividades 2 y 4 |
 | `evidencia_act5.py` | Genera la evidencia de la Actividad 5 en `evidencia/ev_act5_*.txt` |
+| `evidencia_act6.py` | Genera la evidencia de la Actividad 6 en `evidencia/ev_act6_*.txt` y `.json` |
 | `demo_web.py` | Carga cuentas y pedidos ficticios para usar la web |
 | `ver_bd.py` | Muestra la BD tal como quedó guardada |
 | `verificar_secretos.py` | Comprueba llaves, permisos, ausencia de datos en claro y la integridad de la bitácora |
@@ -98,11 +114,14 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 - [`docs/Actividad2_Item2_NortiShop.pdf`](docs/Actividad2_Item2_NortiShop.pdf) – Actividad 2, Item II.
 - [`docs/Informe Técnico Nortishop.pdf`](docs/Informe%20Técnico%20Nortishop.pdf) – Actividad 4: rediseño, seudonimización, anonimización y RBAC.
 - [`docs/Actividad5_NortiShop.pdf`](docs/Actividad5_NortiShop.pdf) – Actividad 5: consentimiento, derechos, auditoría, plan de respuesta a incidentes e implementación.
+- [`docs/Actividad6_NortiShop.pdf`](docs/Actividad6_NortiShop.pdf) – Actividad 6: mecanismos de derechos (canal, verificación, acceso, portabilidad, rectificación, supresión, oposición y bloqueo).
 
 ## Evidencia
 - `ev_demo.txt`, `ev_bd.txt`, `ev_secretos.txt`, `ev_git.txt` y `cap_*.png` (sin `act5`): figuras del informe de la Actividad 2.
 - `ev_act5_*.txt` y `ev_act5_exportacion.json`: salida de `evidencia_act5.py` (consentimiento, derechos, detección e incidente, intentos de elusión y auditoría).
 - `ev_act5_pruebas.txt`: ejecución de las 73 pruebas (`-v`). `ev_act5_exportacion_web.json`: copia descargada desde la web.
+- `ev_act6_*.txt`: salida de `evidencia_act6.py` (canal y modelo, verificación, acceso y portabilidad, rectificación, supresión, oposición y bloqueo); `ev_act6_acceso_ana.json` y `ev_act6_portabilidad_beto.json`: archivos entregados; `ev_act6_pruebas.txt`: las 19 pruebas (`-v`).
+- `cap_act6_*.png`: capturas de la web de la Actividad 6 (formularios, verificación, bloqueo, bandeja de privacidad, oposición acogida y supresión con acta).
 - `cap_act5_*.png`: capturas de la aplicación web, en el orden del recorrido (registro, consentimientos, derechos, privacidad, seguridad y contención).
 
 El archivo `.env`, la base de datos `nortishop.db` y la carpeta `evidencia_incidentes/` NO se incluyen en el repositorio.
