@@ -1,0 +1,54 @@
+==============================================================================
+1. CANAL DE SOLICITUDES Y MODELO DE DATOS
+==============================================================================
+Canales: web (Mi cuenta > Mis derechos, cookie + CSRF) y API (POST /api/v1/derechos, Bearer).
+
+Columnas de solicitudes_derechos:
+  columna            | tipo   
+  -------------------+--------
+  id                 | INTEGER
+  codigo             | TEXT   
+  cliente_id         | INTEGER
+  titular_seudonimo  | TEXT   
+  tipo               | TEXT   
+  canal              | TEXT   
+  tratamiento        | TEXT   
+  asociada           | TEXT   
+  estado             | TEXT   
+  fecha_recepcion    | TEXT   
+  fecha_verificacion | TEXT   
+  fecha_evaluacion   | TEXT   
+  fecha_respuesta    | TEXT   
+  fecha_cierre       | TEXT   
+  plazo_vence        | TEXT   
+  prorrogada         | INTEGER
+  resultado          | TEXT   
+  detalle_cifrado    | TEXT   
+  evaluador_id       | INTEGER
+  acta               | TEXT   
+
+Tablas de apoyo (Actividad 6):
+  verificaciones_identidad   id, solicitud_id, proposito, codigo_hash, expira, intentos, usado
+  registro_rectificaciones   id, solicitud, cliente_id, campo, valor_anterior_cifrado, valor_nuevo_cifrado, fecha, comunicado_a
+  oposiciones                id, cliente_id, tratamiento, solicitud, desde
+  bloqueos                   id, cliente_id, solicitud, asociada, desde, hasta
+  lista_supresion            correo_indice, fecha
+
+Solicitud concreta por la web: Carla pide acceso a sus datos (seguimiento de cada etapa)
+  recibida  : recibida  plazo_vence=2026-12-09 02:28:03
+  verificada: en_evaluacion
+  codigo        | tipo   | canal | estado  | fecha_recepcion     | fecha_verificacion  | fecha_cierre        | plazo_vence        
+  --------------+--------+-------+---------+---------------------+---------------------+---------------------+--------------------
+  SD-A03BC76131 | acceso | web   | cerrada | 2026-11-09 02:28:03 | 2026-11-09 02:28:03 | 2026-11-09 02:28:03 | 2026-12-09 02:28:03
+
+Solicitud concreta por la API: Beto pide portabilidad
+  POST /api/v1/derechos -> 201 {'codigo': 'SD-67BDBE2395', 'estado': 'recibida'}
+  codigo        | tipo         | canal | estado   | fecha_recepcion     | plazo_vence        
+  --------------+--------------+-------+----------+---------------------+--------------------
+  SD-67BDBE2395 | portabilidad | api   | recibida | 2026-11-09 02:28:03 | 2026-12-09 02:28:03
+
+Bandeja de privacidad (seguimiento sin datos personales: el titular es un seudónimo):
+  codigo        | tipo         | canal | estado   | dias_restantes | titular     
+  --------------+--------------+-------+----------+----------------+-------------
+  SD-A03BC76131 | acceso       | web   | cerrada  | 29             | 6842fadfb98e
+  SD-67BDBE2395 | portabilidad | api   | recibida | 29             | 0f537d4a3bec

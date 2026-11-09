@@ -1,0 +1,47 @@
+==============================================================================
+2. VERIFICACIÓN DE IDENTIDAD (INCLUYE SOLICITANTES NO VERIFICADOS)
+==============================================================================
+Factor 1: contraseña reingresada al solicitar. Factor 2: código de 6 dígitos al correo registrado
+(solo se guarda su HMAC; vence en 10 min; 3 intentos; 3 envíos). Cambiar el correo exige un código al nuevo.
+
+Caso A - alguien con la sesión abierta de Ana pero sin su contraseña pide la supresión:
+  crear_solicitud(supresion, password incorrecta)                -> AccesoDenegado: Acceso denegado
+  solicitudes de supresión registradas: 0
+
+Caso B - atacante con la contraseña robada de Ana, sin acceso a su correo, quiere cambiar el correo:
+  verificar_identidad(código 000000)                             -> ValueError: El código es incorrecto o venció
+  verificar_identidad(código 123456)                             -> ValueError: El código es incorrecto o venció
+  verificar_identidad(código 999999)                             -> ValueError: El código es incorrecto o venció
+  codigo        | tipo          | estado  | fecha_verificacion | resultado                                                                                                                                                                                                  
+  --------------+---------------+---------+--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  SD-6154D5D861 | rectificacion | cerrada |                    | No se pudo verificar la identidad del solicitante. Si no está de acuerdo, puede presentar una reclamación ante la Agencia de Protección de Datos Personales dentro de 30 días hábiles desde esta respuesta.
+  correo de Ana sigue siendo: ana@prueba.cl
+  mensajes enviados a atacante@malo.cl: 0
+
+Caso C - Beto obtiene el código de una solicitud de Ana e intenta usarlo:
+  Beto verifica la solicitud de Ana                              -> AccesoDenegado: Acceso denegado
+  Beto descarga la exportación de Ana                            -> AccesoDenegado: Acceso denegado
+  estado de la solicitud de Ana: recibida
+
+Caso D - personal y peticiones sin sesión:
+  soporte crea una solicitud de acceso                           -> AccesoDenegado: Acceso denegado
+  POST /api/v1/derechos sin token -> 401 {'error': 'Se requiere iniciar sesión'}
+
+Caso E - la verdadera Ana verifica con el código de su correo:
+  Ana verifica su solicitud de acceso                            -> OK en_evaluacion
+
+Bitácora de los intentos (sin valores):
+  id | actor_tipo | actor_id | permiso                      | recurso       | resultado | canal   | detalle                                                                                                                                                        
+  ---+------------+----------+------------------------------+---------------+-----------+---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+  29 | cliente    | 3        | derechos.solicitar           | SD-A03BC76131 | exito     | sistema | tipo=acceso canal=web                                                                                                                                          
+  31 | cliente    | 3        | derechos.verificar_identidad | SD-A03BC76131 | exito     | sistema | tipo=acceso estado=en_evaluacion                                                                                                                               
+  33 | cliente    | 3        | derechos.exportar            | SD-A03BC76131 | exito     | sistema | tipo=acceso formato=json secciones=generado,solicitud,tipo,cuenta,tarjetas,pedidos,consentimientos,rectificaciones,oposiciones,bloqueos,informacion_tratamiento
+  38 | cliente    | 2        | derechos.solicitar           | SD-67BDBE2395 | exito     | api     | tipo=portabilidad canal=api                                                                                                                                    
+  42 | cliente    | 1        | derechos.solicitar           |               | fallido   | sistema | tipo=supresion reautenticacion_fallida                                                                                                                         
+  45 | cliente    | 1        | derechos.solicitar           | SD-6154D5D861 | exito     | sistema | tipo=rectificacion canal=web campos=correo                                                                                                                     
+  47 | cliente    | 1        | derechos.verificar_identidad | SD-6154D5D861 | fallido   | sistema | codigo_incorrecto                                                                                                                                              
+  49 | cliente    | 1        | derechos.verificar_identidad | SD-6154D5D861 | fallido   | sistema | codigo_incorrecto                                                                                                                                              
+  51 | cliente    | 1        | derechos.verificar_identidad | SD-6154D5D861 | fallido   | sistema | intentos_agotados                                                                                                                                              
+  55 | cliente    | 1        | derechos.solicitar           | SD-D5A2BE5CE7 | exito     | sistema | tipo=acceso canal=web                                                                                                                                          
+  58 | personal   | 2        | derechos.solicitar           |               | denegado  | sistema |                                                                                                                                                                
+  60 | cliente    | 1        | derechos.verificar_identidad | SD-D5A2BE5CE7 | exito     | sistema | tipo=acceso estado=en_evaluacion                                                                                                                               

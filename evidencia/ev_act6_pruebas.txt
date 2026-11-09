@@ -1,0 +1,24 @@
+test_R3_01_acceso_entrega_todos_los_datos_del_titular_y_solo_los_suyos (pruebas_actividad6.PruebasAccesoPortabilidad.test_R3_01_acceso_entrega_todos_los_datos_del_titular_y_solo_los_suyos) ... ok
+test_R3_02_portabilidad_solo_lo_aportado_en_formato_estructurado (pruebas_actividad6.PruebasAccesoPortabilidad.test_R3_02_portabilidad_solo_lo_aportado_en_formato_estructurado) ... ok
+test_R1_01_solicitud_registrada_con_canal_tipo_fechas_y_plazo (pruebas_actividad6.PruebasCanalYModelo.test_R1_01_solicitud_registrada_con_canal_tipo_fechas_y_plazo) ... ok
+test_R1_02_canal_api_y_detalle_cifrado (pruebas_actividad6.PruebasCanalYModelo.test_R1_02_canal_api_y_detalle_cifrado) ... ok
+test_R6_01_oposicion_a_la_encuesta_acogida (pruebas_actividad6.PruebasOposicionYBloqueo.test_R6_01_oposicion_a_la_encuesta_acogida) ... ok
+test_R6_02_oposicion_no_procede_o_se_rechaza_con_fundamento (pruebas_actividad6.PruebasOposicionYBloqueo.test_R6_02_oposicion_no_procede_o_se_rechaza_con_fundamento) ... ok
+test_R6_03_bloqueo_suspende_el_tratamiento_mientras_se_resuelve (pruebas_actividad6.PruebasOposicionYBloqueo.test_R6_03_bloqueo_suspende_el_tratamiento_mientras_se_resuelve) ... ok
+test_R6_04_bloqueo_invalido_o_sin_verificar (pruebas_actividad6.PruebasOposicionYBloqueo.test_R6_04_bloqueo_invalido_o_sin_verificar) ... ok
+test_R6_05_oposicion_y_bloqueo_por_la_api (pruebas_actividad6.PruebasOposicionYBloqueo.test_R6_05_oposicion_y_bloqueo_por_la_api) ... ok
+test_R4_01_rectificacion_con_registro_del_cambio_y_propagacion (pruebas_actividad6.PruebasRectificacion.test_R4_01_rectificacion_con_registro_del_cambio_y_propagacion) ... ok
+test_R4_02_cambio_de_correo_registrado_y_avisado_a_ambos_correos (pruebas_actividad6.PruebasRectificacion.test_R4_02_cambio_de_correo_registrado_y_avisado_a_ambos_correos) ... ok
+test_R5_01_acta_elimina_bloquea_y_propaga (pruebas_actividad6.PruebasSupresion.test_R5_01_acta_elimina_bloquea_y_propaga) ... ok
+test_R5_02_el_bloqueo_legal_vence_y_el_pedido_se_elimina (pruebas_actividad6.PruebasSupresion.test_R5_02_el_bloqueo_legal_vence_y_el_pedido_se_elimina) ... ok
+test_R5_03_supresion_rechazada_por_pedido_en_curso (pruebas_actividad6.PruebasSupresion.test_R5_03_supresion_rechazada_por_pedido_en_curso) ... ok
+test_R2_01_contraseña_incorrecta_no_crea_solicitud (pruebas_actividad6.PruebasVerificacionIdentidad.test_R2_01_contraseña_incorrecta_no_crea_solicitud) ... ok
+test_R2_02_contraseña_robada_sin_acceso_al_correo_no_rectifica (pruebas_actividad6.PruebasVerificacionIdentidad.test_R2_02_contraseña_robada_sin_acceso_al_correo_no_rectifica) ... ok
+test_R2_03_tercero_con_el_codigo_de_otra_persona (pruebas_actividad6.PruebasVerificacionIdentidad.test_R2_03_tercero_con_el_codigo_de_otra_persona) ... ok
+test_R2_04_sin_verificar_nada_se_ejecuta (pruebas_actividad6.PruebasVerificacionIdentidad.test_R2_04_sin_verificar_nada_se_ejecuta) ... ok
+test_R2_05_personal_y_peticiones_sin_sesion_por_la_api (pruebas_actividad6.PruebasVerificacionIdentidad.test_R2_05_personal_y_peticiones_sin_sesion_por_la_api) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.727s
+
+OK

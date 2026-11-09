@@ -1,0 +1,65 @@
+==============================================================================
+6. OPOSICIÓN Y BLOQUEO DEL TRATAMIENTO
+==============================================================================
+Tratamiento elegido: encuesta de satisfacción por correo tras la entrega (base: interés legítimo, art. 8 a).
+  codigo                   | base_legal                                             | requiere_consentimiento
+  -------------------------+--------------------------------------------------------+------------------------
+  compra                   | Ejecución del contrato de compraventa                  | 0                      
+  boletin                  | Consentimiento                                         | 1                      
+  analitica_comportamiento | Consentimiento                                         | 1                      
+  ofertas_personalizadas   | Consentimiento                                         | 1                      
+  encuesta_satisfaccion    | Interés legítimo del responsable (mejorar el servicio) | 0                      
+
+Destinatarios de la encuesta antes: ['beto@prueba.cl', 'carla.nueva@prueba.cl']
+
+Oposiciones que no proceden:
+  Beto se opone al boletín (se basa en consentimiento)           -> ValueError: Ese tratamiento se basa en tu consentimiento: puedes revocarlo en Consentimientos
+  Beto se opone a 'compra' (contrato)                            -> ValueError: Ese tratamiento es necesario para cumplir el contrato de compraventa: no admite oposición
+  Beto se opone sin motivo                                       -> ValueError: Indica brevemente el motivo de la oposición (entre 10 y 500 caracteres)
+
+Solicitud concreta: Beto se opone a la encuesta y pide el bloqueo mientras se evalúa.
+  Beto verifica la oposición                                     -> OK en_evaluacion
+
+Bloqueos que no proceden:
+  Beto bloquea asociado a una solicitud de acceso                -> ValueError: El bloqueo debe asociarse a una solicitud propia en curso de rectificación, supresión u oposición
+  Carla bloquea asociado a la oposición de Beto                  -> ValueError: El bloqueo debe asociarse a una solicitud propia en curso de rectificación, supresión u oposición
+  Beto verifica el bloqueo                                       -> OK cerrada
+  codigo        | tipo      | tratamiento           | asociada      | estado        | resultado                                                                                                                                                                                                                                                              
+  --------------+-----------+-----------------------+---------------+---------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  SD-7695510280 | oposicion | encuesta_satisfaccion |               | en_evaluacion |                                                                                                                                                                                                                                                                        
+  SD-992FF5FA1F | bloqueo   |                       | SD-7695510280 | cerrada       | Tratamiento bloqueado mientras se resuelve la solicitud SD-7695510280: los datos solo se almacenan. Se suspenden boletín, analítica, ofertas personalizadas, encuesta de satisfacción y consultas de soporte. Se mantiene el despacho de pedidos ya pagados (contrato).
+  id | cliente_id | solicitud     | asociada      | desde               | hasta
+  ---+------------+---------------+---------------+---------------------+------
+  1  | 2          | SD-992FF5FA1F | SD-7695510280 | 2026-11-09 02:28:07 |      
+
+Con el bloqueo vigente (los datos de Beto solo se almacenan):
+  destinatarios de la encuesta: ['carla.nueva@prueba.cl']
+  soporte consulta el contacto de Beto                           -> ValueError: Los datos de este cliente están bloqueados mientras se resuelve una solicitud
+  soporte consulta el contacto de Carla                          -> OK {'nombre': 'Carla Prueba', 'correo': 'carla.nueva@prueba.cl', 'telefono': None}
+  la cuenta de Beto sigue almacenada: True
+
+Privacidad evalúa la oposición:
+  detalle_oposicion -> {'tratamiento': 'encuesta_satisfaccion', 'motivo': 'Recibo demasiados correos y no quiero responder encuestas.'}
+  marketing intenta resolverla                                   -> AccesoDenegado: Acceso denegado
+  privacidad la rechaza sin fundamento                           -> ValueError: El rechazo requiere acreditar motivos legítimos imperiosos (mínimo 20 caracteres)
+  privacidad acoge la oposición                                  -> OK acogida
+  id | cliente_id | tratamiento           | solicitud     | desde              
+  ---+------------+-----------------------+---------------+--------------------
+  1  | 2          | encuesta_satisfaccion | SD-7695510280 | 2026-11-09 02:28:07
+  id | cliente_id | solicitud     | asociada      | desde               | hasta              
+  ---+------------+---------------+---------------+---------------------+--------------------
+  1  | 2          | SD-992FF5FA1F | SD-7695510280 | 2026-11-09 02:28:07 | 2026-11-09 02:28:07
+
+Después: el bloqueo se levantó al cerrarse la oposición, pero la oposición sigue vigente.
+  destinatarios de la encuesta: ['carla.nueva@prueba.cl']
+  soporte consulta el contacto de Beto                           -> OK {'nombre': 'Beto Prueba', 'correo': 'beto@prueba.cl', 'telefono': '+56 9 7777 8888'}
+  respuesta enviada a Beto: Oposición acogida: se dejó de aplicar el tratamiento 'encuesta_satisfaccion' a sus datos.
+
+Bitácora:
+  id  | actor_tipo | actor_id | permiso                | recurso       | resultado | canal   | detalle                                  
+  ----+------------+----------+------------------------+---------------+-----------+---------+------------------------------------------
+  114 | personal   | 4        | encuesta.destinatarios |               | exito     | sistema | incluidos=2 excluidos=0                  
+  135 | cliente    | 2        | derechos.bloquear      | SD-992FF5FA1F | exito     | sistema | asociada=SD-7695510280                   
+  137 | personal   | 4        | encuesta.destinatarios |               | exito     | sistema | incluidos=1 excluidos=1                  
+  144 | personal   | 5        | derechos.oponer        | SD-7695510280 | exito     | sistema | tratamiento=encuesta_satisfaccion acogida
+  146 | personal   | 4        | encuesta.destinatarios |               | exito     | sistema | incluidos=1 excluidos=1                  

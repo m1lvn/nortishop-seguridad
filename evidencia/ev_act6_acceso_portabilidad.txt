@@ -1,0 +1,24 @@
+==============================================================================
+3. ACCESO Y PORTABILIDAD
+==============================================================================
+Solicitud de acceso de Ana -> evidencia/ev_act6_acceso_ana.json
+  secciones: formato, generado, solicitud, tipo, cuenta, tarjetas, pedidos, consentimientos, rectificaciones, oposiciones, bloqueos, informacion_tratamiento
+  pedidos exportados: ['NS-A254752C2783', 'NS-B8CBD20374DD']
+  pedidos de Ana en la base: ['NS-A254752C2783', 'NS-B8CBD20374DD']
+  consentimientos exportados / en la base: 2 / 2
+
+Solo los datos de Ana (búsqueda de datos ajenos o internos en el archivo):
+  correo de Beto           presente: False
+  dirección de Beto        presente: False
+  datos de Carla           presente: False
+  invitado                 presente: False
+  hash de contraseña       presente: False
+  token de pasarela        presente: False
+  índice HMAC del correo   presente: False
+  seudónimo                presente: False
+
+Portabilidad de Beto (API): solo lo que él aportó, en JSON estructurado
+  GET /api/v1/derechos/SD-67BDBE2395/exportacion -> 200, guardado en evidencia/ev_act6_portabilidad_beto.json
+  secciones: consentimientos, cuenta, formato, generado, pedidos, solicitud, tarjetas, tipo
+  campos de la cuenta: correo, direccion, mayoria_edad_declarada, nombre, telefono  (sin nortipuntos: dato generado por NortiShop)
+  Beto pide de nuevo la misma exportación                        -> ValueError: La solicitud no está lista para exportar o ya fue respondida

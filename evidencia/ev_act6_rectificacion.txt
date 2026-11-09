@@ -1,0 +1,44 @@
+==============================================================================
+4. RECTIFICACIÓN CON REGISTRO DEL CAMBIO
+==============================================================================
+Solicitud concreta: Beto corrige su dirección y teléfono. Tiene el pedido 3 pagado (aún no despachado).
+  detalle_cifrado de la solicitud (valores nuevos): recibida, v1:jdg+uduVEZHE6gEA9fQwxlayhUYBenglY3uEZ...
+  Beto verifica con el código del correo                         -> OK cerrada
+  codigo        | estado  | fecha_verificacion  | fecha_cierre        | resultado                                                                      
+  --------------+---------+---------------------+---------------------+--------------------------------------------------------------------------------
+  SD-1700341995 | cerrada | 2026-11-09 02:28:04 | 2026-11-09 02:28:04 | Datos rectificados: direccion,telefono. Pedidos no despachados actualizados: 1.
+
+registro_rectificaciones (crudo: valores cifrados):
+  id | solicitud     | cliente_id | campo     | valor_anterior_cifrado  | valor_nuevo_cifrado     | fecha               | comunicado_a                                                          
+  ---+---------------+------------+-----------+-------------------------+-------------------------+---------------------+-----------------------------------------------------------------------
+  1  | SD-1700341995 | 2          | direccion | NULL…                   | v1:0tUTGVMJJ5QbOpHKVn1… | 2026-11-09 02:28:04 | cuenta del cliente; empresa de despacho (1 pedido(s) no despachado(s))
+  2  | SD-1700341995 | 2          | telefono  | v1:fuHyTFItmq6qHfyWV/p… | v1:dP7hAL3FZGPljCm+K3E… | 2026-11-09 02:28:04 | cuenta del cliente                                                    
+
+El mismo registro descifrado (lo que verá Beto en su próxima solicitud de acceso):
+  direccion  None                           -> Pasaje Nuevo 55, Ñuñoa
+  telefono   +56 9 3333 4444                -> +56 9 7777 8888
+
+Propagación:
+  dirección que ve logística para el pedido 3: Pasaje Nuevo 55, Ñuñoa
+  aviso al correo del titular: NortiShop: se rectificaron tus datos (SD-1700341995)
+
+El registro no se puede alterar:
+  UPDATE registro_rectificaciones SET campo='nombre'             -> IntegrityError: el registro de rectificaciones no se modifica
+
+Rectificación del correo (exige un segundo código enviado al correo nuevo):
+  Carla verifica (código del correo actual)                      -> OK en_evaluacion
+  Carla confirma (código del correo nuevo)                       -> OK cerrada
+  solicitud     | campo  | fecha               | comunicado_a                         
+  --------------+--------+---------------------+--------------------------------------
+  SD-BB4508C589 | correo | 2026-11-09 02:28:04 | cuenta del cliente; lista del boletín
+  avisos: correo anterior='NortiShop: se rectificaron tus datos (SD-BB4508C589)'
+          correo nuevo   ='NortiShop: se rectificaron tus datos (SD-BB4508C589)'
+
+Rectificación con un campo no permitido:
+  cambios={'nortipuntos': 99999}                                 -> ValueError: Solo se pueden rectificar: nombre, teléfono, dirección y correo
+
+Bitácora:
+  id | actor_tipo | actor_id | permiso             | recurso       | resultado | canal   | detalle                                                   
+  ---+------------+----------+---------------------+---------------+-----------+---------+-----------------------------------------------------------
+  73 | cliente    | 2        | derechos.rectificar | SD-1700341995 | exito     | sistema | cliente=2 campos=direccion,telefono pedidos_actualizados=1
+  81 | cliente    | 3        | derechos.rectificar | SD-BB4508C589 | exito     | sistema | cliente=3 campos=correo pedidos_actualizados=0            

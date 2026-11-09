@@ -1,0 +1,79 @@
+==============================================================================
+5. SUPRESIÓN: QUÉ SE ELIMINA, QUÉ SE BLOQUEA POR LEY Y CÓMO SE PROPAGA
+==============================================================================
+Solicitud concreta 1: Ana pide la supresión teniendo el pedido 5 pagado (en curso).
+  Ana verifica                                                   -> OK cerrada
+  resultado: Existen pedidos en curso (pagados o despachados). Sus datos se necesitan para cumplir el contrato de compraventa y el despacho. Puede volver a solicitar la supresión cuando los pedidos se hayan entregado. Si no está de acuerdo, puede presentar una reclamación ante la Agencia de Protección de Datos Personales dentro de 30 días hábiles desde esta respuesta.
+
+Se entregan los pedidos 2 y 5. Solicitud concreta 2: Ana vuelve a pedir la supresión.
+  Ana verifica                                                   -> OK en_evaluacion
+
+Antes de ejecutar:
+  clientes                   filas de Ana: 1
+  tarjetas_guardadas         filas de Ana: 1
+  boletin_suscriptores       filas de Ana: 1
+  pedidos                    filas de Ana: 2
+  registro_rectificaciones   filas de Ana: 0
+  comportamiento_compra      filas de Ana: 1
+  tokens en la bóveda de la pasarela: 1
+  marketing intenta aprobar la supresión                         -> AccesoDenegado: Acceso denegado
+  privacidad aprueba la supresión                                -> OK cerrada
+
+Acta de la supresión (guardada en solicitudes_derechos.acta, sin datos personales):
+{
+  "eliminado": {
+    "cuenta": 1,
+    "tarjetas_guardadas": 1,
+    "comportamiento_compra": 1,
+    "suscripcion_boletin": 1,
+    "registro_rectificaciones": 0,
+    "oposiciones": 0,
+    "bloqueos": 0,
+    "codigos_verificacion": 4,
+    "sesiones_revocadas": 0,
+    "direcciones_de_pedidos": 2
+  },
+  "bloqueado_por_obligacion_legal": {
+    "pedidos_bloqueo_legal": 2,
+    "bloqueo_legal_hasta": "2032-11-07 02:28:05",
+    "consentimientos_seudonimizados": 2,
+    "solicitudes_seudonimizadas": 4
+  },
+  "propagado_a": {
+    "pasarela_pago": "1 de 1 tokens eliminados de la bóveda",
+    "lista_supresion": "índice del correo agregado: se reaplica al restaurar respaldos",
+    "empresa_despacho": "sin envío: la supresión exige no tener pedidos en curso"
+  }
+}
+
+Después de ejecutar:
+  clientes                   filas de Ana: 0
+  tarjetas_guardadas         filas de Ana: 0
+  boletin_suscriptores       filas de Ana: 0
+  registro_rectificaciones   filas de Ana: 0
+  tokens en la bóveda de la pasarela: 0
+
+Pedidos conservados con bloqueo legal (sin vínculo con Ana ni dirección):
+  id | cliente_id | direccion_cifrado | monto | estado    | bloqueo_legal_hasta
+  ---+------------+-------------------+-------+-----------+--------------------
+  2  |            |                   | 39990 | entregado | 2032-11-07 02:28:05
+  5  |            |                   | 9980  | entregado | 2032-11-07 02:28:05
+  aparecen en resumen_pedidos (vista operativa): False
+  logística cambia el estado del pedido 2                        -> AccesoDenegado: Acceso denegado
+  consentimientos de Ana bajo seudónimo: 2
+  login de Ana: None
+
+Respuesta enviada al titular: Eliminado: cuenta, 1 tarjeta(s), preferencias, boletín (1), analítica (1), 0 registro(s) de rectificación y 2 dirección(es) de pedidos. Bloqueado por obligación legal: 2 pedido(s) sin vínculo con la persona hasta 2032-11-07 (Código Tributario); historial de consentimientos bajo seudónimo (prueba de licitud, 2 años). Propagado a: pasarela de pago (1 de 1 tokens eliminados de la bóveda) y lista de supresión de respaldos.
+
+Respaldo restaurado con la cuenta de Ana -> se reaplica la lista de supresión:
+  reaplicar_supresiones() -> 1 cuenta(s) suprimida(s) otra vez
+
+Fin del bloqueo legal (se simula que pasaron los 6 años del pedido 2):
+  pedidos 2 y 5 tras aplicar_retencion: [5]
+
+Bitácora:
+  id  | actor_tipo | actor_id | permiso           | recurso       | resultado | canal   | detalle                                                                         
+  ----+------------+----------+-------------------+---------------+-----------+---------+---------------------------------------------------------------------------------
+  100 |            |          | cuenta.suprimir   | 1             | exito     | sistema | tarjetas=1 pedidos_bloqueados=2 consentimientos=seudonimizados tokens_pasarela=1
+  101 | personal   | 5        | derechos.suprimir | SD-A6BF2C6ED4 | exito     | sistema | pedidos_bloqueados=2 tarjetas=1                                                 
+  107 |            |          | cuenta.suprimir   | 4             | exito     | sistema | tarjetas=0 pedidos_bloqueados=0 consentimientos=seudonimizados tokens_pasarela=0
