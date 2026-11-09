@@ -33,7 +33,8 @@ PERMISOS = {
                 "consentimiento.gestionar", "derechos.solicitar"},
     "soporte": {"pedidos.resumen.leer", "contacto.cliente.leer", "contacto.invitado.leer"},
     "logistica": {"pedidos.resumen.leer", "despacho.direccion.leer", "pedidos.estado.actualizar"},
-    "marketing": {"boletin.enviar", "analitica.leer_seudonimizada", "reportes.leer"},
+    "marketing": {"boletin.enviar", "analitica.leer_seudonimizada", "reportes.leer",
+                  "encuesta.enviar"},          # Actividad 6
     "administrador": {"roles.gestionar", "pedidos.resumen.leer", "reportes.leer",
                       "auditoria.leer", "retencion.ejecutar"},
     # Actividad 5

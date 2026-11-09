@@ -1,0 +1,38 @@
+{
+  "consentimientos": [],
+  "cuenta": {
+    "correo": "beto@prueba.cl",
+    "direccion": null,
+    "mayoria_edad_declarada": "2026-11-09 02:28:02",
+    "nombre": "Beto Prueba",
+    "telefono": "+56 9 3333 4444"
+  },
+  "formato": "nortishop-export/1.0",
+  "generado": "2026-11-09 02:28:04",
+  "pedidos": [
+    {
+      "codigo": "NS-A87A97CEB480",
+      "direccion": "Calle Beto 99, Ñuñoa",
+      "estado": "pagado",
+      "fecha": "2026-11-09 02:28:03",
+      "monto": 25990,
+      "productos": [
+        {
+          "cantidad": 1,
+          "precio": 25990,
+          "producto": "Teclado"
+        }
+      ],
+      "region": "Metropolitana de Santiago",
+      "tarjeta": "**** 4444"
+    }
+  ],
+  "solicitud": "SD-67BDBE2395",
+  "tarjetas": [
+    {
+      "marca": "MASTERCARD",
+      "terminacion": "4444"
+    }
+  ],
+  "tipo": "portabilidad"
+}

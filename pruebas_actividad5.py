@@ -319,7 +319,7 @@ class PruebasDerechos(Base5):
         self.solicitud_verificada(self.ana, "ana@prueba.cl", "supresion")
         filas = derechos.bandeja(self.privacidad)
         self.assertEqual(len(filas), 1)
-        self.assertNotIn("ana", str(filas).lower())
+        self.assertNotIn("ana", " ".join(str(v) for v in filas[0].values()).lower())   # valores, no nombres de columna
         self.assertNotIn("cliente_id", filas[0])
         for s in (self.admin, self.soporte, self.seguridad, self.ana):
             with self.assertRaises(AccesoDenegado):

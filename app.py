@@ -276,7 +276,12 @@ def cambiar_consentimiento(finalidad, accion):
 @app.route("/derechos")
 @con_sesion
 def mis_derechos():
-    return render_template("derechos.html", solicitudes=derechos.mis_solicitudes(g.sesion, g.sesion.id))
+    solicitudes = derechos.mis_solicitudes(g.sesion, g.sesion.id)
+    ya_bloqueadas = {s["asociada"] for s in solicitudes
+                     if s["tipo"] == "bloqueo" and s["estado"] != "cerrada" or (s["resultado"] or "").startswith("Tratamiento bloqueado")}
+    bloqueables = [s for s in solicitudes if s["tipo"] in derechos.TIPOS_BLOQUEABLES and s["estado"] != "cerrada"
+                   and s["codigo"] not in ya_bloqueadas]
+    return render_template("derechos.html", solicitudes=solicitudes, bloqueables=bloqueables)
 
 
 @app.route("/derechos/solicitar", methods=["POST"])
@@ -287,7 +292,8 @@ def solicitar_derecho():
     if f.get("tipo") == "rectificacion":
         # la web solo arma el diccionario con los 4 campos del formulario; el servicio vuelve a validarlo
         cambios = {c: f.get(c) for c in derechos.CAMPOS_RECTIFICABLES if f.get(c)}
-    codigo = derechos.crear_solicitud(g.sesion, f.get("tipo"), f.get("password", ""), cambios)
+    codigo = derechos.crear_solicitud(g.sesion, f.get("tipo"), f.get("password", ""), cambios, canal="web",
+                                      tratamiento=f.get("tratamiento"), motivo=f.get("motivo"), asociada=f.get("asociada"))
     return redirect(url_for("verificar_derecho", codigo=codigo))
 
 
@@ -339,7 +345,11 @@ def panel():
 @app.route("/privacidad/solicitudes")
 @con_sesion
 def bandeja_privacidad():
-    return render_template("privacidad.html", solicitudes=derechos.bandeja(g.sesion, solo_abiertas=False))
+    solicitudes = derechos.bandeja(g.sesion, solo_abiertas=False)
+    for s in solicitudes:
+        if s["tipo"] == "oposicion" and s["estado"] == "en_evaluacion":
+            s["motivo"] = derechos.detalle_oposicion(g.sesion, s["codigo"])["motivo"]
+    return render_template("privacidad.html", solicitudes=solicitudes)
 
 
 @app.route("/privacidad/solicitudes/<codigo>/<accion>", methods=["POST"])
@@ -350,6 +360,10 @@ def resolver_solicitud(codigo, accion):
         derechos.resolver_supresion(g.sesion, codigo, True, pasarela=pasarela)
     elif accion == "rechazar":
         derechos.resolver_supresion(g.sesion, codigo, False, motivo)
+    elif accion == "acoger_oposicion":
+        derechos.resolver_oposicion(g.sesion, codigo, True)
+    elif accion == "rechazar_oposicion":
+        derechos.resolver_oposicion(g.sesion, codigo, False, motivo)
     elif accion == "prorrogar":
         derechos.prorrogar(g.sesion, codigo, motivo)
     else:
@@ -486,7 +500,9 @@ def api_derechos():
     if request.method == "GET":
         return jsonify(derechos.mis_solicitudes(g.sesion, g.sesion.id))
     datos = _datos()
-    codigo = derechos.crear_solicitud(g.sesion, datos.get("tipo"), datos.get("password", ""), datos.get("cambios"))
+    codigo = derechos.crear_solicitud(g.sesion, datos.get("tipo"), datos.get("password", ""), datos.get("cambios"),
+                                      canal="api", tratamiento=datos.get("tratamiento"), motivo=datos.get("motivo"),
+                                      asociada=datos.get("asociada"))
     return jsonify({"codigo": codigo, "estado": "recibida"}), 201
 
 
@@ -525,8 +541,12 @@ def api_bandeja():
 @con_sesion
 def api_resolver(codigo):
     datos = _datos()
-    estado = derechos.resolver_supresion(g.sesion, codigo, datos.get("decision") == "aprobar", datos.get("motivo"),
-                                         pasarela=pasarela)
+    tipo = next((s["tipo"] for s in derechos.bandeja(g.sesion) if s["codigo"] == codigo), None)
+    if tipo == "oposicion":
+        estado = derechos.resolver_oposicion(g.sesion, codigo, datos.get("decision") == "aprobar", datos.get("motivo"))
+    else:
+        estado = derechos.resolver_supresion(g.sesion, codigo, datos.get("decision") == "aprobar", datos.get("motivo"),
+                                             pasarela=pasarela)
     return jsonify({"estado": estado})
 
 

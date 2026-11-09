@@ -1,0 +1,126 @@
+{
+  "formato": "nortishop-export/1.0",
+  "generado": "2026-11-09 02:28:04",
+  "solicitud": "SD-D5A2BE5CE7",
+  "tipo": "acceso",
+  "cuenta": {
+    "nombre": "Ana Prueba",
+    "correo": "ana@prueba.cl",
+    "telefono": "+56 9 1111 2222",
+    "direccion": "Av. Los Leones 1234, Providencia",
+    "nortipuntos": 0,
+    "mayoria_edad_declarada": "2026-11-09 02:28:02"
+  },
+  "tarjetas": [
+    {
+      "marca": "VISA",
+      "terminacion": "1111"
+    }
+  ],
+  "pedidos": [
+    {
+      "codigo": "NS-A254752C2783",
+      "fecha": "2026-11-09 02:28:03",
+      "estado": "pagado",
+      "monto": 39990,
+      "tarjeta": "**** 1111",
+      "region": "Metropolitana de Santiago",
+      "direccion": "Av. Los Leones 1234, Providencia",
+      "productos": [
+        {
+          "producto": "Audífonos",
+          "cantidad": 1,
+          "precio": 39990
+        }
+      ]
+    },
+    {
+      "codigo": "NS-B8CBD20374DD",
+      "fecha": "2026-11-09 02:28:03",
+      "estado": "pagado",
+      "monto": 9980,
+      "tarjeta": "**** 1111",
+      "region": "Metropolitana de Santiago",
+      "direccion": "Av. Los Leones 1234, Providencia",
+      "productos": [
+        {
+          "producto": "Cable USB-C",
+          "cantidad": 2,
+          "precio": 4990
+        }
+      ]
+    }
+  ],
+  "consentimientos": [
+    {
+      "finalidad": "analitica_comportamiento",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-11-09 02:28:02",
+      "canal": "registro"
+    },
+    {
+      "finalidad": "boletin",
+      "version": 1,
+      "accion": "otorgado",
+      "fecha": "2026-11-09 02:28:02",
+      "canal": "registro"
+    }
+  ],
+  "rectificaciones": [],
+  "oposiciones": [],
+  "bloqueos": [],
+  "informacion_tratamiento": {
+    "finalidades": [
+      {
+        "finalidad": "compra",
+        "descripcion": "Procesar, cobrar y despachar los pedidos",
+        "base_legal": "Ejecución del contrato de compraventa"
+      },
+      {
+        "finalidad": "boletin",
+        "descripcion": "Enviar el boletín con novedades y ofertas por correo",
+        "base_legal": "Consentimiento"
+      },
+      {
+        "finalidad": "analitica_comportamiento",
+        "descripcion": "Analizar las categorías que compra el cliente (bajo seudónimo)",
+        "base_legal": "Consentimiento"
+      },
+      {
+        "finalidad": "ofertas_personalizadas",
+        "descripcion": "Mostrar ofertas personalizadas en la cuenta según sus compras",
+        "base_legal": "Consentimiento"
+      },
+      {
+        "finalidad": "encuesta_satisfaccion",
+        "descripcion": "Enviar por correo una encuesta de satisfacción después de la entrega del pedido",
+        "base_legal": "Interés legítimo del responsable (mejorar el servicio)"
+      }
+    ],
+    "destinatarios": [
+      "Pasarela de pago (tokenización y cobro)",
+      "Empresa de despacho (solo dirección del envío)"
+    ],
+    "interes_legitimo": "Encuesta de satisfacción tras la entrega: mejorar el servicio. Puede oponerse.",
+    "conservacion": "Dirección y contacto de pedidos: hasta 365 días después de la entrega. Registros contables de pedidos: plazo tributario. Cuenta: hasta que se solicite su supresión.",
+    "solicitudes": [
+      {
+        "codigo": "SD-6154D5D861",
+        "tipo": "rectificacion",
+        "canal": "web",
+        "estado": "cerrada",
+        "fecha_recepcion": "2026-11-09 02:28:04",
+        "fecha_cierre": "2026-11-09 02:28:04"
+      },
+      {
+        "codigo": "SD-D5A2BE5CE7",
+        "tipo": "acceso",
+        "canal": "web",
+        "estado": "en_evaluacion",
+        "fecha_recepcion": "2026-11-09 02:28:04",
+        "fecha_cierre": null
+      }
+    ]
+  }
+}

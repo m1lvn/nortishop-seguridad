@@ -10,6 +10,8 @@
 # parámetro y está protegida por @requiere_permiso (rbac.py), que además la audita.
 # Los procesos que dependen del consentimiento preguntan por su finalidad exacta
 # (consentimiento.vigente): analítica, boletín y ofertas personalizadas.
+# Actividad 6: los tratamientos que no son necesarios para el contrato consultan además si el titular
+# tiene un bloqueo vigente (art. 8 ter) o se opuso a ese tratamiento (art. 8): tratamiento_suspendido().
 
 import re
 import secrets
@@ -51,6 +53,27 @@ def _cifrar_opcional(valor, contexto):
 
 def _ahora():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+# ---------- Oposición y bloqueo (Actividad 6) ----------
+
+def bloqueo_vigente(con, cliente_id):
+    """Bloqueo temporal (art. 8 ter): mientras se resuelve una solicitud, los datos solo se almacenan."""
+    return con.execute("SELECT 1 FROM bloqueos WHERE cliente_id=? AND hasta IS NULL", (cliente_id,)).fetchone() is not None
+
+
+def tratamiento_suspendido(cliente_id, tratamiento, con=None):
+    """True si el titular tiene un bloqueo vigente o una oposición acogida para ese tratamiento."""
+    propia = con is None
+    con = con or conectar()
+    try:
+        if bloqueo_vigente(con, cliente_id):
+            return True
+        return con.execute("SELECT 1 FROM oposiciones WHERE cliente_id=? AND tratamiento=?",
+                           (cliente_id, tratamiento)).fetchone() is not None
+    finally:
+        if propia:
+            con.close()
 
 
 # ---------- Validaciones (los errores nombran el campo, nunca el valor) ----------
@@ -358,6 +381,12 @@ def contacto_cliente(sesion, cliente_id):
     con.close()
     if f is None:
         raise AccesoDenegado("Acceso denegado")
+    con = conectar()
+    bloqueado = bloqueo_vigente(con, cliente_id)
+    con.close()
+    if bloqueado:
+        # con un bloqueo vigente soporte no puede consultar ni usar el contacto (solo se almacena)
+        raise ValueError("Los datos de este cliente están bloqueados mientras se resuelve una solicitud")
     idx = f["correo_indice"]
     return {"nombre": f["nombre"],
             "correo": descifrar(f["correo_cifrado"], _ctx_cliente("correo", idx)),
@@ -393,8 +422,8 @@ def actualizar_estado(sesion, pedido_id, estado):
     if estado not in ESTADOS_PEDIDO:
         raise ValueError("Estado de pedido no válido")
     con = conectar()
-    f = con.execute("SELECT estado FROM pedidos WHERE id=?", (pedido_id,)).fetchone()
-    if f is None:
+    f = con.execute("SELECT estado, bloqueo_legal_hasta FROM pedidos WHERE id=?", (pedido_id,)).fetchone()
+    if f is None or f["bloqueo_legal_hasta"] is not None:      # conservado solo por obligación legal
         con.close()
         raise AccesoDenegado("Acceso denegado")
     if ESTADOS_PEDIDO.index(estado) <= ESTADOS_PEDIDO.index(f["estado"]):
@@ -407,9 +436,10 @@ def actualizar_estado(sesion, pedido_id, estado):
 
 @requiere_permiso("pedidos.resumen.leer")
 def resumen_pedidos(sesion):
-    """Vista sin datos personales: código, monto, estado y fecha."""
+    """Vista sin datos personales: código, monto, estado y fecha. Excluye los pedidos con bloqueo legal."""
     con = conectar()
-    filas = con.execute("SELECT codigo, monto, estado, fecha FROM pedidos ORDER BY id").fetchall()
+    filas = con.execute("SELECT codigo, monto, estado, fecha FROM pedidos WHERE bloqueo_legal_hasta IS NULL "
+                        "ORDER BY id").fetchall()
     con.close()
     return [dict(f) for f in filas]
 
@@ -519,6 +549,8 @@ def correos_para_envio_boletin(sesion):
     correos = []
     for f in filas:
         titular = ("cliente", f["cliente_id"]) if f["cliente_id"] is not None else ("suscriptor", f["correo_indice"])
+        if f["cliente_id"] is not None and tratamiento_suspendido(f["cliente_id"], "boletin"):
+            continue
         if consentimiento.vigente(*titular, "boletin"):
             correos.append(descifrar(f["correo_cifrado"], f"boletin.correo:{f['correo_indice']}"))
     return correos
@@ -532,6 +564,8 @@ def seudonimo_cliente(cliente_id):
 def guardar_comportamiento(cliente_id, datos):
     """Solo con consentimiento vigente para "analitica_comportamiento" y bajo seudónimo."""
     if not consentimiento.vigente("cliente", cliente_id, "analitica_comportamiento"):
+        return False
+    if tratamiento_suspendido(cliente_id, "analitica_comportamiento"):
         return False
     seud = seudonimo_cliente(cliente_id)
     con = conectar()
@@ -567,8 +601,12 @@ def reporte_ventas(sesion):
 
 @requiere_permiso("retencion.ejecutar")
 def aplicar_retencion(sesion, dias=365):
-    """Pedidos entregados hace más de N días: se borran dirección y contacto. Queda lo contable."""
+    """
+    Pedidos entregados hace más de N días: se borran dirección y contacto. Queda lo contable.
+    Los pedidos con bloqueo legal vencido (terminó la obligación de conservarlos) se eliminan.
+    """
     con = conectar()
+    con.execute("DELETE FROM pedidos WHERE bloqueo_legal_hasta IS NOT NULL AND bloqueo_legal_hasta < ?", (_ahora(),))
     cur = con.execute(
         """UPDATE pedidos SET direccion_cifrado=NULL, invitado_correo_cifrado=NULL, invitado_telefono_cifrado=NULL
            WHERE estado='entregado' AND fecha < datetime('now', ?)
@@ -580,14 +618,22 @@ def aplicar_retencion(sesion, dias=365):
     return cur.rowcount
 
 
+AÑOS_CONSERVACION_TRIBUTARIA = 6      # plazo máximo de fiscalización del SII (art. 200 del Código Tributario)
+
+
 def suprimir_cliente(cliente_id, pasarela=None):
     """
-    Supresión de los datos del cliente (la usan eliminar_cuenta y derechos.ejecutar_supresion):
-      - se borran la cuenta, las tarjetas (y se pide a la pasarela borrar el token), el comportamiento
-        y la suscripción; se revocan sus sesiones;
-      - los pedidos se conservan sin vínculo ni dirección (respaldo contable y tributario);
-      - el historial de consentimientos y las solicitudes quedan bajo seudónimo;
-      - el índice del correo pasa a la lista de supresión, que se reaplica si se restaura un respaldo.
+    Supresión de los datos del cliente (la usan eliminar_cuenta y derechos.resolver_supresion).
+    Devuelve el acta: qué se eliminó, qué se conserva bloqueado y a quién se propagó (solo cantidades).
+      ELIMINA   cuenta, tarjetas guardadas, comportamiento de compra, suscripción al boletín,
+                registro de rectificaciones, oposiciones, bloqueos, códigos de verificación pendientes;
+                revoca las sesiones; borra la dirección de los pedidos.
+      BLOQUEA   los pedidos (monto, fecha, productos, últimos 4 dígitos) se desvinculan de la persona y quedan
+                con bloqueo legal por AÑOS_CONSERVACION_TRIBUTARIA años: no aparecen en las vistas operativas,
+                no se pueden modificar y aplicar_retencion los elimina al vencer.
+                El historial de consentimientos y las solicitudes quedan bajo seudónimo (prueba de licitud).
+      PROPAGA   pasarela de pago (borra los tokens de su bóveda); lista de supresión (se reaplica si se
+                restaura un respaldo); la bitácora solo guarda el id interno, nunca datos de la persona.
     """
     con = conectar()
     c = con.execute("SELECT correo_indice FROM clientes WHERE id=?", (cliente_id,)).fetchone()
@@ -595,31 +641,58 @@ def suprimir_cliente(cliente_id, pasarela=None):
         con.close()
         raise AccesoDenegado("Acceso denegado")
     seud = seudonimo_cliente(cliente_id)
+    hasta = (datetime.now(timezone.utc) + timedelta(days=365 * AÑOS_CONSERVACION_TRIBUTARIA)).strftime("%Y-%m-%d %H:%M:%S")
     tokens = [f["token_pasarela"] for f in
               con.execute("SELECT token_pasarela FROM tarjetas_guardadas WHERE cliente_id=?", (cliente_id,))]
-    con.execute("DELETE FROM tarjetas_guardadas WHERE cliente_id=?", (cliente_id,))
-    con.execute("DELETE FROM comportamiento_compra WHERE seudonimo=?", (seud,))
-    con.execute("DELETE FROM boletin_suscriptores WHERE correo_indice=? OR cliente_id=?", (c["correo_indice"], cliente_id))
-    con.execute("UPDATE pedidos SET cliente_id=NULL, direccion_cifrado=NULL WHERE cliente_id=?", (cliente_id,))
-    consentimiento.seudonimizar_titular(con, cliente_id, seud)
-    con.execute("UPDATE solicitudes_derechos SET cliente_id=NULL, detalle_cifrado=NULL WHERE cliente_id=?", (cliente_id,))
-    con.execute("UPDATE sesiones SET revocada=1 WHERE actor_tipo='cliente' AND actor_id=?", (cliente_id,))
+
+    def borrar(sql, *args):
+        return con.execute(sql, args).rowcount
+
+    eliminado = {
+        "cuenta": borrar("DELETE FROM clientes WHERE id=?", cliente_id),
+        "tarjetas_guardadas": borrar("DELETE FROM tarjetas_guardadas WHERE cliente_id=?", cliente_id),
+        "comportamiento_compra": borrar("DELETE FROM comportamiento_compra WHERE seudonimo=?", seud),
+        "suscripcion_boletin": borrar("DELETE FROM boletin_suscriptores WHERE correo_indice=? OR cliente_id=?",
+                                      c["correo_indice"], cliente_id),
+        "registro_rectificaciones": borrar("DELETE FROM registro_rectificaciones WHERE cliente_id=?", cliente_id),
+        "oposiciones": borrar("DELETE FROM oposiciones WHERE cliente_id=?", cliente_id),
+        "bloqueos": borrar("DELETE FROM bloqueos WHERE cliente_id=?", cliente_id),
+        "codigos_verificacion": borrar("DELETE FROM verificaciones_identidad WHERE solicitud_id IN "
+                                       "(SELECT id FROM solicitudes_derechos WHERE cliente_id=?)", cliente_id),
+        "sesiones_revocadas": borrar("UPDATE sesiones SET revocada=1 WHERE actor_tipo='cliente' AND actor_id=? "
+                                     "AND revocada=0", cliente_id),
+        "direcciones_de_pedidos": con.execute("SELECT COUNT(*) FROM pedidos WHERE cliente_id=? AND direccion_cifrado "
+                                              "IS NOT NULL", (cliente_id,)).fetchone()[0],
+    }
+    bloqueado = {
+        "pedidos_bloqueo_legal": borrar("UPDATE pedidos SET cliente_id=NULL, direccion_cifrado=NULL, "
+                                        "bloqueo_legal_hasta=? WHERE cliente_id=?", hasta, cliente_id),
+        "bloqueo_legal_hasta": hasta,
+        "consentimientos_seudonimizados": consentimiento.seudonimizar_titular(con, cliente_id, seud),
+        "solicitudes_seudonimizadas": borrar("UPDATE solicitudes_derechos SET cliente_id=NULL, detalle_cifrado=NULL "
+                                             "WHERE cliente_id=?", cliente_id),
+    }
     con.execute("INSERT OR REPLACE INTO lista_supresion (correo_indice, fecha) VALUES (?,?)", (c["correo_indice"], _ahora()))
-    con.execute("DELETE FROM clientes WHERE id=?", (cliente_id,))
     con.commit()
     con.close()
-    if pasarela is not None:
-        for token in tokens:
-            pasarela.eliminar_token(token)
+    tokens_borrados = sum(1 for token in tokens if pasarela is not None and pasarela.eliminar_token(token))
+    propagado = {
+        "pasarela_pago": f"{tokens_borrados} de {len(tokens)} tokens eliminados de la bóveda" if pasarela is not None
+                         else f"pendiente: {len(tokens)} tokens (sin conexión con la pasarela)",
+        "lista_supresion": "índice del correo agregado: se reaplica al restaurar respaldos",
+        "empresa_despacho": "sin envío: la supresión exige no tener pedidos en curso",
+    }
     log.info(f"cuenta eliminada id={cliente_id}")
     registrar_evento(None, "cuenta.suprimir", cliente_id, "exito",
-                     f"tarjetas={len(tokens)} pedidos_desvinculados=si consentimientos=seudonimizados")
+                     f"tarjetas={len(tokens)} pedidos_bloqueados={bloqueado['pedidos_bloqueo_legal']} "
+                     f"consentimientos=seudonimizados tokens_pasarela={tokens_borrados}")
+    return {"eliminado": eliminado, "bloqueado_por_obligacion_legal": bloqueado, "propagado_a": propagado}
 
 
 @requiere_permiso("cuenta.eliminar", recurso_en_arg1=True, regla=_es_propio)
 def eliminar_cuenta(sesion, cliente_id, pasarela=None):
     """El propio cliente elimina su cuenta (la web usa el flujo de derechos.py, con verificación)."""
-    suprimir_cliente(cliente_id, pasarela)
+    return suprimir_cliente(cliente_id, pasarela)
 
 
 def reaplicar_supresiones():
@@ -644,7 +717,8 @@ def ofertas(sesion):
     Con consentimiento vigente para "ofertas_personalizadas" se usan los productos del historial propio;
     sin él (o revocado) se muestran solo las ofertas generales. Otro consentimiento no lo reemplaza.
     """
-    if not consentimiento.vigente("cliente", sesion.id, "ofertas_personalizadas"):
+    if (not consentimiento.vigente("cliente", sesion.id, "ofertas_personalizadas")
+            or tratamiento_suspendido(sesion.id, "ofertas_personalizadas")):
         return {"personalizadas": False, "ofertas": OFERTAS_GENERALES}
     con = conectar()
     filas = con.execute("SELECT codigo, detalle_cifrado FROM pedidos WHERE cliente_id=? ORDER BY id DESC LIMIT 3",
@@ -654,3 +728,23 @@ def ofertas(sesion):
                  for p in descifrar_json(f["detalle_cifrado"], _ctx_pedido("detalle", f["codigo"]))}
     return {"personalizadas": True,
             "ofertas": [f"10% en accesorios para {p}" for p in sorted(productos)] or OFERTAS_GENERALES}
+
+
+# ---------- Encuesta de satisfacción (interés legítimo; admite oposición, Actividad 6) ----------
+
+@requiere_permiso("encuesta.enviar")
+def correos_para_encuesta(sesion, dias=30):
+    """
+    Clientes con un pedido entregado en los últimos N días. No necesita consentimiento (interés legítimo),
+    pero se excluye a quien se opuso a este tratamiento o tiene un bloqueo vigente.
+    """
+    con = conectar()
+    filas = con.execute("SELECT DISTINCT c.id, c.correo_cifrado, c.correo_indice FROM clientes c "
+                        "JOIN pedidos p ON p.cliente_id = c.id WHERE p.estado='entregado' "
+                        "AND p.fecha >= datetime('now', ?) AND c.deshabilitada=0", (f"-{int(dias)} days",)).fetchall()
+    correos = [descifrar(f["correo_cifrado"], _ctx_cliente("correo", f["correo_indice"])) for f in filas
+               if not tratamiento_suspendido(f["id"], "encuesta_satisfaccion", con)]
+    con.close()
+    registrar_evento(sesion, "encuesta.destinatarios", None, "exito",
+                     f"incluidos={len(correos)} excluidos={len(filas) - len(correos)}")
+    return correos
