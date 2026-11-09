@@ -5,9 +5,9 @@
 <p>La bandeja no muestra nombres ni correos: el titular se identifica con un seudónimo. Plazo legal: 30 días
 corridos, con una prórroga por igual período.</p>
 <div class="tabla"><table>
-  <tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Recibida</th><th>Verificada</th><th>Vence</th><th>Días</th><th>Titular</th><th>Acciones</th></tr>
+  <tr><th>Código</th><th>Tipo</th><th>Canal</th><th>Estado</th><th>Recibida</th><th>Verificada</th><th>Vence</th><th>Días</th><th>Titular</th><th>Acciones</th></tr>
   {% for s in solicitudes %}
-  <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
+  <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}{% if s.tratamiento %}: {{ s.tratamiento }}{% endif %}{% if s.asociada %} de {{ s.asociada }}{% endif %}</td><td>{{ s.canal }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
     <td>{{ s.fecha_recepcion }}</td><td>{{ s.fecha_verificacion or "—" }}</td>
     <td>{{ s.plazo_vence }}{% if s.prorrogada %} (prorrogada){% endif %}</td>
     <td>{{ s.dias_restantes if s.estado != 'cerrada' else "—" }}</td><td class="mono">{{ s.titular }}</td>
@@ -20,6 +20,15 @@ corridos, con una prórroga por igual período.</p>
         <textarea name="motivo" placeholder="Fundamento del rechazo" required minlength="20" maxlength="500"></textarea>
         <button class="secundario">Rechazar con fundamento</button></form>
     {% endif %}
+    {% if s.tipo == 'oposicion' and s.estado == 'en_evaluacion' %}
+      <small>Motivo del titular: {{ s.motivo }}</small>
+      <form method="post" action="{{ url_for('resolver_solicitud', codigo=s.codigo, accion='acoger_oposicion') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><button>Acoger oposición</button></form>
+      <form method="post" action="{{ url_for('resolver_solicitud', codigo=s.codigo, accion='rechazar_oposicion') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <textarea name="motivo" placeholder="Motivos legítimos imperiosos" required minlength="20" maxlength="500"></textarea>
+        <button class="secundario">Rechazar con fundamento</button></form>
+    {% endif %}
     {% if s.estado not in ('ejecutada', 'rechazada', 'cerrada') and not s.prorrogada %}
       <form method="post" action="{{ url_for('resolver_solicitud', codigo=s.codigo, accion='prorrogar') }}">
         <input type="hidden" name="csrf" value="{{ csrf }}">
@@ -28,6 +37,6 @@ corridos, con una prórroga por igual período.</p>
     {% endif %}
     {% if s.resultado %}<small>{{ s.resultado }}</small>{% endif %}
     </td></tr>
-  {% else %}<tr><td colspan="9">No hay solicitudes.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="10">No hay solicitudes.</td></tr>{% endfor %}
 </table></div>
 {% endblock %}

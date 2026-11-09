@@ -22,6 +22,9 @@ FINALIDADES = [
     ("boletin", "Enviar el boletín con novedades y ofertas por correo", "Consentimiento", 1),
     ("analitica_comportamiento", "Analizar las categorías que compra el cliente (bajo seudónimo)", "Consentimiento", 1),
     ("ofertas_personalizadas", "Mostrar ofertas personalizadas en la cuenta según sus compras", "Consentimiento", 1),
+    # Actividad 6: tratamiento basado en el interés legítimo; el titular puede oponerse (art. 8 letra a)
+    ("encuesta_satisfaccion", "Enviar por correo una encuesta de satisfacción después de la entrega del pedido",
+     "Interés legítimo del responsable (mejorar el servicio)", 0),
 ]
 
 TEXTOS_INICIALES = {
@@ -253,8 +256,8 @@ def baja_boletin(correo_indice, token, canal="enlace_correo"):
 
 def seudonimizar_titular(con, cliente_id, seudonimo):
     """Al suprimir la cuenta el historial deja de apuntar al cliente (lo permite el trigger)."""
-    con.execute("UPDATE consentimientos SET titular_tipo='seudonimo', titular_ref=? "
-                "WHERE titular_tipo='cliente' AND titular_ref=?", (seudonimo, str(cliente_id)))
+    return con.execute("UPDATE consentimientos SET titular_tipo='seudonimo', titular_ref=? "
+                       "WHERE titular_tipo='cliente' AND titular_ref=?", (seudonimo, str(cliente_id))).rowcount
 
 
 @requiere_permiso("retencion.ejecutar")

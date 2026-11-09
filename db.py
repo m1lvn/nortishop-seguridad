@@ -10,6 +10,8 @@
 # rol del personal, seudónimo y bitácora inmutable.
 # Actividad 5: consentimiento por finalidad, solicitudes de derechos, sesiones, bitácora encadenada,
 # alertas, incidentes y contención (cuentas deshabilitadas, permisos suspendidos).
+# Actividad 6: canal de la solicitud, oposición y bloqueo, registro de rectificaciones y
+# bloqueo legal de los pedidos que se conservan tras una supresión.
 
 import os
 import stat
@@ -57,7 +59,10 @@ CREATE TABLE IF NOT EXISTS pedidos (
     fecha                     TEXT DEFAULT CURRENT_TIMESTAMP,
     region_envio              TEXT,
     estado                    TEXT NOT NULL DEFAULT 'pagado'
-                              CHECK (estado IN ('pagado','despachado','entregado'))
+                              CHECK (estado IN ('pagado','despachado','entregado')),
+    -- Actividad 6: tras la supresión del titular el pedido queda bloqueado: solo se conserva para
+    -- cumplir la obligación tributaria y no se usa en ningún otro tratamiento.
+    bloqueo_legal_hasta       TEXT
 );
 
 CREATE TABLE IF NOT EXISTS administradores (
@@ -136,7 +141,11 @@ CREATE TABLE IF NOT EXISTS solicitudes_derechos (
     codigo              TEXT NOT NULL UNIQUE,
     cliente_id          INTEGER REFERENCES clientes(id),   -- NULL tras la supresión
     titular_seudonimo   TEXT NOT NULL,                     -- permite el seguimiento sin identificar
-    tipo                TEXT NOT NULL CHECK (tipo IN ('acceso','portabilidad','rectificacion','supresion')),
+    tipo                TEXT NOT NULL CHECK (tipo IN ('acceso','portabilidad','rectificacion','supresion',
+                                                      'oposicion','bloqueo')),
+    canal               TEXT NOT NULL DEFAULT 'web' CHECK (canal IN ('web','api')),
+    tratamiento         TEXT REFERENCES finalidades(codigo),  -- oposición: tratamiento al que se opone
+    asociada            TEXT,                              -- bloqueo: solicitud que lo motiva
     estado              TEXT NOT NULL DEFAULT 'recibida'
                         CHECK (estado IN ('recibida','verificada','en_evaluacion','ejecutada','rechazada','cerrada')),
     fecha_recepcion     TEXT NOT NULL,
@@ -147,8 +156,9 @@ CREATE TABLE IF NOT EXISTS solicitudes_derechos (
     plazo_vence         TEXT NOT NULL,
     prorrogada          INTEGER NOT NULL DEFAULT 0,
     resultado           TEXT,                              -- respuesta fundamentada, sin datos personales
-    detalle_cifrado     TEXT,                              -- valores nuevos de una rectificación
-    evaluador_id        INTEGER REFERENCES administradores(id)
+    detalle_cifrado     TEXT,                              -- valores nuevos de una rectificación o motivo de la oposición
+    evaluador_id        INTEGER REFERENCES administradores(id),
+    acta                TEXT                               -- supresión: qué se eliminó, bloqueó y propagó (solo cantidades)
 );
 
 CREATE TABLE IF NOT EXISTS verificaciones_identidad (
@@ -159,6 +169,43 @@ CREATE TABLE IF NOT EXISTS verificaciones_identidad (
     expira        TEXT NOT NULL,
     intentos      INTEGER NOT NULL DEFAULT 0,
     usado         INTEGER NOT NULL DEFAULT 0
+);
+
+-- ---------------- Actividad 6: registro del cambio, oposición y bloqueo ----------------
+
+-- Una fila por campo rectificado: qué cambió, cuándo, por qué solicitud y a quién se comunicó.
+-- Los valores anterior y nuevo van cifrados; se borran con la supresión de la cuenta.
+CREATE TABLE IF NOT EXISTS registro_rectificaciones (
+    id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+    solicitud                TEXT NOT NULL,
+    cliente_id               INTEGER REFERENCES clientes(id),
+    campo                    TEXT NOT NULL CHECK (campo IN ('nombre','correo','telefono','direccion')),
+    valor_anterior_cifrado   TEXT,
+    valor_nuevo_cifrado      TEXT,
+    fecha                    TEXT NOT NULL,
+    comunicado_a             TEXT NOT NULL           -- destinatarios a los que se propagó el cambio (art. 6)
+);
+CREATE TRIGGER IF NOT EXISTS rectificaciones_sin_update BEFORE UPDATE ON registro_rectificaciones
+BEGIN SELECT RAISE(ABORT, 'el registro de rectificaciones no se modifica'); END;
+
+-- Oposición acogida: el tratamiento deja de aplicarse al titular (art. 8).
+CREATE TABLE IF NOT EXISTS oposiciones (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id   INTEGER NOT NULL REFERENCES clientes(id),
+    tratamiento  TEXT NOT NULL REFERENCES finalidades(codigo),
+    solicitud    TEXT NOT NULL,
+    desde        TEXT NOT NULL,
+    UNIQUE (cliente_id, tratamiento)
+);
+
+-- Bloqueo temporal (art. 8 ter): mientras se resuelve la solicitud asociada, los datos solo se almacenan.
+CREATE TABLE IF NOT EXISTS bloqueos (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id   INTEGER NOT NULL REFERENCES clientes(id),
+    solicitud    TEXT NOT NULL,             -- solicitud de bloqueo
+    asociada     TEXT NOT NULL,             -- rectificación, supresión u oposición en curso
+    desde        TEXT NOT NULL,
+    hasta        TEXT                       -- NULL = vigente; se completa al cerrarse la asociada
 );
 
 -- Índices de correos suprimidos: al restaurar un respaldo se vuelven a aplicar las supresiones.

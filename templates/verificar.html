@@ -33,6 +33,9 @@
 </form>
 {% elif s.estado == 'en_evaluacion' and s.tipo == 'supresion' %}
 <p class="aviso">Identidad verificada. El equipo de privacidad está evaluando si existe alguna obligación de conservar datos.</p>
+{% elif s.estado == 'en_evaluacion' and s.tipo == 'oposicion' %}
+<p class="aviso">Identidad verificada. El equipo de privacidad está evaluando tu oposición al tratamiento
+{{ s.tratamiento }}. Mientras tanto puedes pedir el bloqueo temporal desde Mis derechos.</p>
 {% endif %}
 {% if s.estado == 'recibida' or (s.estado == 'en_evaluacion' and s.tipo == 'rectificacion') %}
 <form method="post" class="en-linea">

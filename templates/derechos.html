@@ -37,15 +37,44 @@ No pedimos documentos ni datos adicionales. Respondemos dentro de 30 días corri
     <label>Contraseña actual <input name="password" type="password" required></label>
     <button class="peligro">Solicitar supresión</button>
   </form>
+  <form method="post" class="bloque" action="{{ url_for('solicitar_derecho') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="tipo" value="oposicion">
+    <strong>Oposición</strong>
+    <p class="texto-consentimiento">Para tratamientos basados en nuestro interés legítimo. Los que dependen de tu
+    consentimiento (boletín, analítica, ofertas) se desactivan en Consentimientos.</p>
+    <label>Tratamiento
+      <select name="tratamiento">
+        <option value="encuesta_satisfaccion">Encuesta de satisfacción tras la entrega</option>
+      </select></label>
+    <label>Motivo <textarea name="motivo" required minlength="10" maxlength="500"></textarea></label>
+    <label>Contraseña actual <input name="password" type="password" required></label>
+    <button>Oponerme</button>
+  </form>
+  <form method="post" class="bloque" action="{{ url_for('solicitar_derecho') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="tipo" value="bloqueo">
+    <strong>Bloqueo temporal</strong>
+    <p class="texto-consentimiento">Mientras resolvemos una rectificación, supresión u oposición, tus datos solo se
+    almacenan: no se usan para boletín, analítica, ofertas, encuestas ni consultas de soporte.</p>
+    {% if bloqueables %}
+    <label>Solicitud en curso
+      <select name="asociada">
+        {% for b in bloqueables %}<option value="{{ b.codigo }}">{{ b.codigo }} ({{ b.tipo }})</option>{% endfor %}
+      </select></label>
+    <label>Contraseña actual <input name="password" type="password" required></label>
+    <button>Bloquear mientras se resuelve</button>
+    {% else %}<p>No tienes solicitudes de rectificación, supresión u oposición en curso.</p>{% endif %}
+  </form>
 </div>
 <h2>Mis solicitudes</h2>
 <div class="tabla"><table>
-  <tr><th>Código</th><th>Tipo</th><th>Estado</th><th>Recibida</th><th>Plazo</th><th>Respuesta</th><th>Acción</th></tr>
+  <tr><th>Código</th><th>Tipo</th><th>Canal</th><th>Estado</th><th>Recibida</th><th>Plazo</th><th>Respuesta</th><th>Acción</th></tr>
   {% for s in solicitudes %}
-  <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
+  <tr><td class="mono">{{ s.codigo }}</td><td>{{ s.tipo }}{% if s.tratamiento %}: {{ s.tratamiento }}{% endif %}{% if s.asociada %} de {{ s.asociada }}{% endif %}</td><td>{{ s.canal }}</td><td class="estado">{{ s.estado|replace('_', ' ') }}</td>
     <td>{{ s.fecha_recepcion }}</td><td>{{ s.plazo_vence }}{% if s.prorrogada %} (prorrogado){% endif %}</td>
     <td>{{ s.resultado or "—" }}</td>
     <td>{% if s.estado in ('recibida', 'en_evaluacion') %}<a href="{{ url_for('verificar_derecho', codigo=s.codigo) }}">Continuar</a>{% endif %}</td></tr>
-  {% else %}<tr><td colspan="7">No has hecho solicitudes.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="8">No has hecho solicitudes.</td></tr>{% endfor %}
 </table></div>
 {% endblock %}

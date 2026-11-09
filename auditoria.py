@@ -32,6 +32,7 @@ _CATEGORIAS = [
     ("cuenta.suprimir", "supresion"),
     ("derechos.rectificar", "modificacion"),
     ("derechos.", "derechos"),
+    ("encuesta.", "acceso"),            # Actividad 6: lectura de correos para la encuesta
     ("roles.", "administracion"),
     ("retencion.", "administracion"),
     ("auditoria.", "administracion"),
