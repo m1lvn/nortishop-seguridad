@@ -294,7 +294,9 @@ class PruebasSeguridad(Base):
         ns.direccion_despacho(self.logistica, 1)
         with self.assertRaises(AccesoDenegado):
             ns.direccion_despacho(self.soporte, 1)
-        filas = ns.leer_auditoria(self.admin)
+        # Actividad 7: solo el rol seguridad lee la bitácora completa
+        ns.crear_admin(self.admin, "seba_seguridad", CLAVE, "seguridad")
+        filas = ns.leer_auditoria(ns.login_admin("seba_seguridad", CLAVE))
         resultados = {(f["rol"], f["permiso"], f["resultado"]) for f in filas}
         self.assertIn(("logistica", "despacho.direccion.leer", "permitido"), resultados)
         self.assertIn(("soporte", "despacho.direccion.leer", "denegado"), resultados)
