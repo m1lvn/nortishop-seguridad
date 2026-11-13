@@ -4,14 +4,14 @@
 # solo al dueño del correo y solo con NORTISHOP_MODO_DEMO=1. En producción, enviar() usaría un
 # proveedor de correo con TLS; el resto del flujo no cambia.
 
-from datetime import datetime, timezone
+import reloj
 
 _BUZON = []
 
 
 def enviar(destino, asunto, cuerpo):
     _BUZON.append({"destino": destino, "asunto": asunto, "cuerpo": cuerpo,
-                   "fecha": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")})
+                   "fecha": reloj.ahora()})
 
 
 def mensajes_para(destino):

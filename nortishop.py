@@ -294,9 +294,16 @@ def _pagar(pasarela, token, monto, orden):
     return pago
 
 
+def _evento_pedido(sesion, pedido_id, origen):
+    """Actividad 7: la compra crea datos personales (dirección; correo y teléfono si es invitado). Se registra
+    el id del pedido y el origen, nunca los datos ni el código de autorización."""
+    registrar_evento(sesion, "pedido.crear", pedido_id, "exito" if pedido_id else "fallido",
+                     f"origen={origen}" + ("" if pedido_id else " pago_rechazado"))
+
+
 def _registrar_pedido(con, codigo, cliente_id, es_invitado, correo_inv, tel_inv, direccion, productos, monto,
                       token, ultimos4, autorizacion, region):
-    con.execute(
+    return con.execute(
         """INSERT INTO pedidos (codigo, cliente_id, es_invitado, invitado_correo_cifrado, invitado_telefono_cifrado,
                                 direccion_cifrado, detalle_cifrado, monto, token_pasarela, ultimos4, autorizacion,
                                 region_envio)
@@ -307,7 +314,7 @@ def _registrar_pedido(con, codigo, cliente_id, es_invitado, correo_inv, tel_inv,
          cifrar(direccion, _ctx_pedido("direccion", codigo)),
          cifrar_json(productos, _ctx_pedido("detalle", codigo)),
          monto, token, ultimos4, autorizacion, region),
-    )
+    ).lastrowid
 
 
 @requiere_permiso("compra.tarjeta_guardada")
@@ -330,11 +337,13 @@ def comprar_con_tarjeta_guardada(sesion, pasarela, productos, monto, direccion=N
         raise ValueError("El campo dirección es obligatorio para despachar")
     codigo = _nuevo_codigo_pedido()
     pago = _pagar(pasarela, t["token_pasarela"], monto, codigo)
+    pedido_id = None
     if pago["aprobado"]:
-        _registrar_pedido(con, codigo, sesion.id, 0, None, None, direccion, productos, monto,
-                          t["token_pasarela"], t["ultimos4"], pago["autorizacion"], region)
+        pedido_id = _registrar_pedido(con, codigo, sesion.id, 0, None, None, direccion, productos, monto,
+                                      t["token_pasarela"], t["ultimos4"], pago["autorizacion"], region)
         con.commit()
     con.close()
+    _evento_pedido(sesion, pedido_id, "cuenta")
     return pago
 
 
@@ -351,12 +360,14 @@ def comprar_como_invitado(pasarela, correo, telefono, direccion, numero, vencimi
     tok = pasarela.tokenizar(numero, vencimiento, cvv)
     codigo = _nuevo_codigo_pedido()
     pago = _pagar(pasarela, tok["token"], monto, codigo)
+    pedido_id = None
     if pago["aprobado"]:
         con = conectar()
-        _registrar_pedido(con, codigo, None, 1, correo, telefono, direccion, productos, monto,
-                          tok["token"], tok["ultimos4"], pago["autorizacion"], region)
+        pedido_id = _registrar_pedido(con, codigo, None, 1, correo, telefono, direccion, productos, monto,
+                                      tok["token"], tok["ultimos4"], pago["autorizacion"], region)
         con.commit()
         con.close()
+    _evento_pedido(None, pedido_id, "invitado")
     return pago
 
 
@@ -432,6 +443,7 @@ def actualizar_estado(sesion, pedido_id, estado):
     con.execute("UPDATE pedidos SET estado=? WHERE id=?", (estado, pedido_id))
     con.commit()
     con.close()
+    registrar_evento(sesion, "pedido.estado", pedido_id, "exito", f"estado={estado}")
 
 
 @requiere_permiso("pedidos.resumen.leer")
@@ -477,6 +489,26 @@ def crear_admin(sesion, usuario, password, rol="soporte"):
     registrar_evento(sesion, "roles.crear_cuenta", f"personal:{nuevo_id}", "exito", f"rol={rol}")
 
 
+@requiere_permiso("roles.gestionar", recurso_en_arg1=True)
+def restablecer_clave_personal(sesion, personal_id, nueva):
+    """
+    Actividad 7 (erradicación): el administrador fija una contraseña nueva a una cuenta del personal cuyas
+    credenciales se comprometieron y se revocan sus sesiones. La contraseña se entrega a la persona por un
+    canal aparte y no queda en la bitácora.
+    """
+    validar_password(nueva)
+    con = conectar()
+    cur = con.execute("UPDATE administradores SET password_hash=?, intentos_fallidos=0, bloqueado_hasta=NULL WHERE id=?",
+                      (hashear_password(nueva), personal_id))
+    con.commit()
+    con.close()
+    if not cur.rowcount:
+        raise AccesoDenegado("Acceso denegado")
+    import sesiones                                   # import local: sesiones importa rbac
+    n = sesiones.revocar_de_actor("personal", personal_id)
+    registrar_evento(sesion, "roles.restablecer_clave", f"personal:{personal_id}", "exito", f"sesiones={n}")
+
+
 def login_admin(usuario, password):
     if not isinstance(usuario, str):
         return None
@@ -501,9 +533,18 @@ def leer_auditoria(sesion, limite=None):
 def purgar_auditoria(sesion, dias=730):
     """Elimina lo que superó el plazo y deja constancia del último hash eliminado (la cadena sigue verificable)."""
     n, hasta_id, ultimo_hash = purgar_vencidos(dias)
+    # Actividad 7: las alertas descartadas (falsos positivos) siguen el mismo plazo que la bitácora;
+    # las que se convirtieron en incidente se conservan con el registro del incidente
+    con = conectar()
+    alertas = con.execute("DELETE FROM alertas WHERE estado='descartada' AND fecha < datetime('now', ?)",
+                          (f"-{int(dias)} days",)).rowcount
+    con.commit()
+    con.close()
     if n:
         registrar_evento(sesion, "auditoria.purgar", None, "exito",
-                         f"filas={n} hasta_id={hasta_id} ultimo_hash={ultimo_hash}")
+                         f"filas={n} hasta_id={hasta_id} ultimo_hash={ultimo_hash} alertas={alertas}")
+    elif alertas:
+        registrar_evento(sesion, "auditoria.purgar", None, "exito", f"filas=0 alertas={alertas}")
     return n
 
 
@@ -564,8 +605,10 @@ def seudonimo_cliente(cliente_id):
 def guardar_comportamiento(cliente_id, datos):
     """Solo con consentimiento vigente para "analitica_comportamiento" y bajo seudónimo."""
     if not consentimiento.vigente("cliente", cliente_id, "analitica_comportamiento"):
+        registrar_evento(None, "analitica.guardar", cliente_id, "fallido", "sin_consentimiento")
         return False
     if tratamiento_suspendido(cliente_id, "analitica_comportamiento"):
+        registrar_evento(None, "analitica.guardar", cliente_id, "fallido", "tratamiento_suspendido")
         return False
     seud = seudonimo_cliente(cliente_id)
     con = conectar()
@@ -573,6 +616,7 @@ def guardar_comportamiento(cliente_id, datos):
                 (seud, cifrar_json(datos, f"comportamiento.datos:{seud}")))
     con.commit()
     con.close()
+    registrar_evento(None, "analitica.guardar", cliente_id, "exito")       # el seudónimo no va a la bitácora
     return True
 
 
@@ -606,7 +650,8 @@ def aplicar_retencion(sesion, dias=365):
     Los pedidos con bloqueo legal vencido (terminó la obligación de conservarlos) se eliminan.
     """
     con = conectar()
-    con.execute("DELETE FROM pedidos WHERE bloqueo_legal_hasta IS NOT NULL AND bloqueo_legal_hasta < ?", (_ahora(),))
+    eliminados = con.execute("DELETE FROM pedidos WHERE bloqueo_legal_hasta IS NOT NULL AND bloqueo_legal_hasta < ?",
+                             (_ahora(),)).rowcount
     cur = con.execute(
         """UPDATE pedidos SET direccion_cifrado=NULL, invitado_correo_cifrado=NULL, invitado_telefono_cifrado=NULL
            WHERE estado='entregado' AND fecha < datetime('now', ?)
@@ -615,6 +660,8 @@ def aplicar_retencion(sesion, dias=365):
         (f"-{int(dias)} days",))
     con.commit()
     con.close()
+    registrar_evento(sesion, "retencion.aplicar", None, "exito",
+                     f"pedidos_anonimizados={cur.rowcount} pedidos_eliminados={eliminados}")
     return cur.rowcount
 
 

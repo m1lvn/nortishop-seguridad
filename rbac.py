@@ -4,7 +4,8 @@
 #   - Sesion: quién es la persona (cliente o personal) y su rol.
 #   - tiene_permiso: además de la matriz, comprueba contra la base que la cuenta exista, no esté
 #     deshabilitada, que el rol sea el que tiene hoy y que el permiso no esté suspendido.
-#   - @requiere_permiso: único punto de control; audita cada intento (permitido o denegado).
+#   - @requiere_permiso: único punto de control; audita cada intento (permitido o denegado) y, desde la
+#     Actividad 7, también si la operación autorizada terminó en error (evento con tras=<id> y motivo).
 #   - FiltroDatosPersonales: enmascara correos, RUT y tarjetas antes de escribir un log.
 
 import re
@@ -35,8 +36,10 @@ PERMISOS = {
     "logistica": {"pedidos.resumen.leer", "despacho.direccion.leer", "pedidos.estado.actualizar"},
     "marketing": {"boletin.enviar", "analitica.leer_seudonimizada", "reportes.leer",
                   "encuesta.enviar"},          # Actividad 6
+    # Actividad 7: el administrador ya no lee la bitácora (sus propias operaciones quedan en ella);
+    # solo ve un resumen por categoría y resultado, sin actores ni recursos.
     "administrador": {"roles.gestionar", "pedidos.resumen.leer", "reportes.leer",
-                      "auditoria.leer", "retencion.ejecutar"},
+                      "auditoria.resumen", "retencion.ejecutar"},
     # Actividad 5
     "privacidad": {"derechos.gestionar", "consentimiento.textos.publicar"},
     "seguridad": {"auditoria.leer", "auditoria.verificar", "auditoria.purgar", "alertas.gestionar",
@@ -79,9 +82,9 @@ def tiene_permiso(sesion, permiso):
     return _cuenta_vigente(sesion) and not permiso_suspendido(permiso)
 
 
-def _auditar(sesion, permiso, recurso, resultado):
+def _auditar(sesion, permiso, recurso, resultado, detalle=None):
     """Guarda quién, con qué rol, qué permiso, sobre qué id y con qué resultado. Sin datos personales."""
-    registrar_evento(sesion if isinstance(sesion, Sesion) else None, permiso, recurso, resultado)
+    return registrar_evento(sesion if isinstance(sesion, Sesion) else None, permiso, recurso, resultado, detalle)
 
 
 def requiere_permiso(permiso, recurso_en_arg1=False, regla=None):
@@ -96,8 +99,18 @@ def requiere_permiso(permiso, recurso_en_arg1=False, regla=None):
             if not tiene_permiso(sesion, permiso) or (regla is not None and not regla(sesion, *args)):
                 _auditar(sesion, permiso, recurso, "denegado")
                 raise AccesoDenegado("Acceso denegado")
-            _auditar(sesion, permiso, recurso, "permitido")
-            return fn(sesion, *args, **kwargs)
+            evento = _auditar(sesion, permiso, recurso, "permitido")
+            try:
+                return fn(sesion, *args, **kwargs)
+            except AccesoDenegado:
+                # p. ej. logística pide la dirección de un pedido ya entregado: sin este evento la bitácora
+                # diría que el acceso se concedió
+                _auditar(sesion, permiso, recurso, "denegado", f"tras={evento} motivo=regla_negocio")
+                raise
+            except Exception as e:
+                motivo = "validacion" if isinstance(e, ValueError) else "error"
+                _auditar(sesion, permiso, recurso, "fallido", f"tras={evento} motivo={motivo}")
+                raise
         return envoltura
     return decorador
 

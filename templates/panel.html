@@ -8,4 +8,13 @@ los enlaces que no corresponden a tu rol responden "Acceso denegado".</p>
   {% if sesion.rol == 'privacidad' %}<li><a href="{{ url_for('bandeja_privacidad') }}">Solicitudes de derechos</a></li>{% endif %}
   {% if sesion.rol == 'seguridad' %}<li><a href="{{ url_for('seguridad') }}">Auditoría, alertas e incidentes</a></li>{% endif %}
 </ul>
+{% if resumen is not none %}
+<h2>Actividad registrada (últimos 30 días)</h2>
+<p>El administrador ve solo cuántos eventos hubo por categoría y resultado. Quién hizo qué y sobre qué registro
+lo consulta el rol seguridad, con un motivo.</p>
+<div class="tabla"><table class="compacta">
+  <tr><th>Categoría</th><th>Resultado</th><th>Eventos</th></tr>
+  {% for f in resumen %}<tr><td>{{ f.categoria }}</td><td>{{ f.resultado }}</td><td>{{ f.eventos }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
 {% endblock %}

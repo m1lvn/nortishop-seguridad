@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Bitácora{% endblock %}
+{% block contenido %}
+<h1>Consulta de la bitácora</h1>
+<p>Solo el rol seguridad. Cada consulta queda registrada con su motivo y los filtros usados (no sus valores).
+Las fechas son UTC.</p>
+<form method="get" class="bloque">
+  <label>Motivo (obligatorio)
+    <input name="motivo" list="motivos" required maxlength="40" value="{{ motivo }}" placeholder="INC-AAAAMMDD-XXXX, ALERTA-N o revision_periodica">
+    <datalist id="motivos">{% for m in motivos %}<option value="{{ m }}">{% endfor %}</datalist></label>
+  <label>Actor <input name="actor" maxlength="32" value="{{ filtros.actor or '' }}" placeholder="personal:ID o cliente:ID"></label>
+  <label>Recurso <input name="recurso" maxlength="64" value="{{ filtros.recurso or '' }}"></label>
+  <label>Operación <input name="permiso" maxlength="64" value="{{ filtros.permiso or '' }}" placeholder="contacto.cliente.leer"></label>
+  <label>Desde <input name="desde" maxlength="19" value="{{ filtros.desde or '' }}" placeholder="AAAA-MM-DD HH:MM:SS"></label>
+  <label>Hasta <input name="hasta" maxlength="19" value="{{ filtros.hasta or '' }}" placeholder="AAAA-MM-DD HH:MM:SS"></label>
+  <button>Consultar</button>
+</form>
+{% if eventos is not none %}
+<h2>{{ eventos|length }} eventos</h2>
+<div class="tabla"><table class="compacta">
+  <tr><th>#</th><th>Fecha (UTC)</th><th>Actor</th><th>Rol</th><th>Operación</th><th>Categoría</th><th>Recurso</th><th>Resultado</th><th>Canal</th><th>Origen</th><th>Detalle</th></tr>
+  {% for e in eventos %}
+  <tr><td>{{ e.id }}</td><td>{{ e.fecha }}</td><td>{{ e.actor_tipo or "—" }}{% if e.actor_id %}:{{ e.actor_id }}{% endif %}</td><td>{{ e.rol or "—" }}</td>
+    <td>{{ e.permiso }}</td><td>{{ e.categoria }}</td><td>{{ e.recurso or "—" }}</td><td>{{ e.resultado }}</td>
+    <td>{{ e.canal }}</td><td>{{ e.origen or "—" }}</td><td>{{ e.detalle or "" }}</td></tr>
+  {% else %}<tr><td colspan="11">Sin eventos con esos filtros.</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+<p><a href="{{ url_for('seguridad') }}">Volver</a></p>
+{% endblock %}
