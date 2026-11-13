@@ -42,6 +42,14 @@
 </div>
 {% endif %}
 
+<h2>Reconstruir con la bitácora</h2>
+<form method="get" class="bloque" action="{{ url_for('reconstruccion', codigo=inc.codigo) }}">
+  <label>Actor <input name="actor" required maxlength="32" placeholder="personal:ID o cliente:ID"></label>
+  <label>Desde (UTC) <input name="desde" maxlength="19" placeholder="AAAA-MM-DD HH:MM:SS"></label>
+  <label>Hasta (UTC) <input name="hasta" maxlength="19" placeholder="AAAA-MM-DD HH:MM:SS"></label>
+  <button>Reconstruir</button>
+</form>
+
 <h2>Comprobaciones antes de restablecer</h2>
 <table>
   <tr><th>Bitácora íntegra</th><td class="{{ 'ok' if recuperacion.bitacora_integra else 'mal' }}">{{ "sí" if recuperacion.bitacora_integra else "no" }}</td></tr>

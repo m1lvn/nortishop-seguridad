@@ -27,7 +27,8 @@ import incidentes
 import sesiones
 import notificador
 import auditoria
-from rbac import AccesoDenegado
+import trazabilidad
+from rbac import AccesoDenegado, tiene_permiso
 from config import LLAVE_PASARELA
 from pasarela_simulada import PasarelaPago
 
@@ -339,7 +340,8 @@ def buzon():
 def panel():
     if g.sesion.tipo != "personal":
         raise AccesoDenegado("Acceso denegado")
-    return render_template("panel.html")
+    resumen = trazabilidad.resumen_auditoria(g.sesion) if g.sesion.rol == "administrador" else None
+    return render_template("panel.html", resumen=resumen)
 
 
 @app.route("/privacidad/solicitudes")
@@ -378,6 +380,34 @@ def seguridad():
                            incidentes=incidentes.listar_incidentes(g.sesion),
                            eventos=ns.leer_auditoria(g.sesion, limite=15),
                            integridad=deteccion.verificar_integridad(g.sesion))
+
+
+FILTROS_BITACORA = ("actor", "recurso", "permiso", "desde", "hasta")
+
+
+@app.route("/seguridad/bitacora")
+@con_sesion
+def bitacora():
+    """Actividad 7: consulta filtrada; sin motivo solo se muestra el formulario."""
+    a = request.args
+    filtros = {k: (a.get(k) or None) for k in FILTROS_BITACORA}
+    eventos = None
+    if a.get("motivo"):
+        eventos = trazabilidad.consultar(g.sesion, a.get("motivo"), **filtros)
+    elif not tiene_permiso(g.sesion, "auditoria.leer"):
+        raise AccesoDenegado("Acceso denegado")
+    return render_template("bitacora.html", eventos=eventos, filtros=filtros, motivo=a.get("motivo", ""),
+                           motivos=trazabilidad.MOTIVOS_CONSULTA)
+
+
+@app.route("/seguridad/incidentes/<codigo>/reconstruccion")
+@con_sesion
+def reconstruccion(codigo):
+    a = request.args
+    if not a.get("actor"):
+        raise ValueError("Indique el actor (personal:ID o cliente:ID)")
+    r = trazabilidad.reconstruir(g.sesion, codigo, a.get("actor"), a.get("desde") or None, a.get("hasta") or None)
+    return render_template("reconstruccion.html", r=r)
 
 
 @app.route("/seguridad/alertas/<int:alerta_id>/<accion>", methods=["POST"])
@@ -553,7 +583,24 @@ def api_resolver(codigo):
 @app.route("/api/v1/auditoria")
 @con_sesion
 def api_auditoria():
-    return jsonify(ns.leer_auditoria(g.sesion, limite=min(_entero(request.args.get("limite", 100)), 1000)))
+    """Actividad 7: la consulta exige motivo (?motivo=INC-...|ALERTA-N|revision_periodica...) y admite filtros."""
+    a = request.args
+    filtros = {k: (a.get(k) or None) for k in FILTROS_BITACORA}
+    return jsonify(trazabilidad.consultar(g.sesion, a.get("motivo"), limite=min(_entero(a.get("limite", 100)), 1000),
+                                          **filtros))
+
+
+@app.route("/api/v1/auditoria/resumen")
+@con_sesion
+def api_auditoria_resumen():
+    return jsonify(trazabilidad.resumen_auditoria(g.sesion))
+
+
+@app.route("/api/v1/incidentes/<codigo>/reconstruccion")
+@con_sesion
+def api_reconstruccion(codigo):
+    a = request.args
+    return jsonify(trazabilidad.reconstruir(g.sesion, codigo, a.get("actor"), a.get("desde") or None, a.get("hasta") or None))
 
 
 @app.route("/api/v1/auditoria/integridad")

@@ -9,13 +9,14 @@
 
 import os
 import json
+import shutil
 import stat
 import hashlib
 import secrets
 import sqlite3
-from datetime import datetime, timezone
 
 import db
+import reloj
 from config import VERSION_ACTUAL
 from cripto import cifrar, descifrar
 from rbac import AccesoDenegado, requiere_permiso, PERMISOS
@@ -25,6 +26,7 @@ import sesiones
 FASES = ("analisis", "contencion", "erradicacion", "recuperacion", "notificacion", "lecciones", "cerrado")
 SEVERIDADES = ("baja", "media", "alta", "critica")
 DIR_EVIDENCIA = os.getenv("NORTISHOP_DIR_EVIDENCIA", "evidencia_incidentes")
+DIAS_EVIDENCIA = 365          # Actividad 7: la copia de la base se elimina 1 año después del cierre
 
 # categorías de datos que se pueden ver afectadas y las que obligan a comunicar a los titulares
 CATEGORIAS_DATOS = ("correo", "telefono", "direccion", "nombre", "historial_compras", "tarjeta_ultimos4",
@@ -34,7 +36,7 @@ CONTACTO = "privacidad@nortishop.cl"
 
 
 def _ahora():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return reloj.ahora()
 
 
 def _incidente(con, codigo):
@@ -66,7 +68,7 @@ def registrar_incidente(sesion, tipo, severidad, descripcion, alerta_id=None):
         raise ValueError("Severidad no válida")
     if not descripcion or len(descripcion) > 1000:
         raise ValueError("La descripción es obligatoria (máximo 1000 caracteres)")
-    codigo = "INC-" + datetime.now(timezone.utc).strftime("%Y%m%d") + "-" + secrets.token_hex(2).upper()
+    codigo = "INC-" + reloj.ahora_dt().strftime("%Y%m%d") + "-" + secrets.token_hex(2).upper()
     con = db.conectar()
     cur = con.execute("INSERT INTO incidentes (codigo, fecha_deteccion, tipo, severidad, descripcion, responsable_id) "
                       "VALUES (?,?,?,?,?,?)", (codigo, _ahora(), tipo, severidad, descripcion, sesion.id))
@@ -284,7 +286,7 @@ def preservar_evidencia(sesion, codigo):
     con.close()
     carpeta = os.path.join(DIR_EVIDENCIA, codigo)
     os.makedirs(carpeta, mode=0o700, exist_ok=True)
-    marca = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    marca = reloj.ahora_dt().strftime("%Y%m%dT%H%M%SZ")
     destino = os.path.join(carpeta, f"bd_{marca}.db")
     origen = sqlite3.connect(db.RUTA_BD)
     copia = sqlite3.connect(destino)
@@ -304,6 +306,30 @@ def preservar_evidencia(sesion, codigo):
     os.chmod(ruta_manifiesto, stat.S_IRUSR)
     registrar_evento(sesion, "contencion.preservar_evidencia", codigo, "exito", f"sha256={sha256}")
     return manifiesto
+
+
+@requiere_permiso("incidentes.gestionar")
+def purgar_evidencia(sesion, dias=DIAS_EVIDENCIA):
+    """
+    Actividad 7. La copia preservada contiene los datos personales (cifrados) de toda la base: se conserva
+    mientras puede servir para la investigación o un reclamo y se elimina un año después del cierre.
+    El registro del incidente (art. 14 sexies inc. 2) no se borra aquí: se conserva 5 años.
+    """
+    con = db.conectar()
+    vencidos = [f["codigo"] for f in con.execute(
+        "SELECT codigo FROM incidentes WHERE fase='cerrado' AND fecha_cierre < datetime(?, ?)",
+        (_ahora(), f"-{int(dias)} days"))]
+    con.close()
+    n = 0
+    for codigo in vencidos:
+        carpeta = os.path.join(DIR_EVIDENCIA, codigo)
+        if os.path.isdir(carpeta):
+            for nombre in os.listdir(carpeta):
+                os.chmod(os.path.join(carpeta, nombre), stat.S_IRUSR | stat.S_IWUSR)
+            shutil.rmtree(carpeta)
+            n += 1
+    registrar_evento(sesion, "incidentes.purgar_evidencia", None, "exito", f"carpetas={n}")
+    return n
 
 
 # ---------------- Erradicación y recuperación ----------------

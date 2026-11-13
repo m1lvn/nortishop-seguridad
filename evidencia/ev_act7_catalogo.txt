@@ -1,0 +1,75 @@
+74 eventos catalogados
+auth.login                           autenticacion   recurso: cuenta (cliente:ID / personal:ID); vacío si no existe claves: -                                             motivos: bloqueo_activado,clave_incorrecta,cuenta_bloqueada,cuenta_deshabilitada,cuenta_inexistente,limite_por_ip
+sesion.crear                         autenticacion   recurso: —                                        claves: -                                             motivos: -
+sesion.cerrar                        autenticacion   recurso: —                                        claves: -                                             motivos: -
+cuenta.registrar                     creacion        recurso: id del cliente                           claves: consentimientos                               motivos: -
+pedido.crear                         creacion        recurso: id del pedido                            claves: origen                                        motivos: pago_rechazado
+analitica.guardar                    tratamiento     recurso: id del cliente                           claves: -                                             motivos: sin_consentimiento,tratamiento_suspendido
+encuesta.destinatarios               acceso          recurso: —                                        claves: excluidos,incluidos                           motivos: -
+pedido.estado                        modificacion    recurso: id del pedido                            claves: estado                                        motivos: -
+retencion.aplicar                    supresion       recurso: —                                        claves: pedidos_anonimizados,pedidos_eliminados       motivos: -
+consentimiento.otorgar               consentimiento  recurso: finalidad                                claves: version                                       motivos: -
+consentimiento.revocar               consentimiento  recurso: finalidad                                claves: -                                             motivos: -
+consentimiento.texto.publicar        consentimiento  recurso: finalidad                                claves: cambio_material,version                       motivos: -
+consentimiento.suscribir_boletin     consentimiento  recurso: —                                        claves: -                                             motivos: -
+consentimiento.baja_boletin          consentimiento  recurso: —                                        claves: -                                             motivos: token_invalido
+derechos.solicitar                   derechos        recurso: código de la solicitud                   claves: asociada,campos,canal,tipo,tratamiento        motivos: reautenticacion_fallida
+derechos.verificar_identidad         derechos        recurso: código de la solicitud                   claves: estado,tipo                                   motivos: codigo_incorrecto,intentos_agotados
+derechos.reenviar_codigo             derechos        recurso: código de la solicitud                   claves: proposito                                     motivos: envios_agotados
+derechos.confirmar_correo            derechos        recurso: código de la solicitud                   claves: -                                             motivos: -
+derechos.prorrogar                   derechos        recurso: código de la solicitud                   claves: -                                             motivos: -
+derechos.oponer                      derechos        recurso: código de la solicitud                   claves: tratamiento                                   motivos: acogida,rechazada_con_fundamento
+derechos.bloquear                    derechos        recurso: código de la solicitud                   claves: asociada                                      motivos: -
+derechos.exportar                    exportacion     recurso: código de la solicitud                   claves: formato,secciones,tipo                        motivos: -
+derechos.rectificar                  modificacion    recurso: código de la solicitud                   claves: campos,cliente,pedidos_actualizados           motivos: -
+derechos.suprimir                    supresion       recurso: código de la solicitud                   claves: pedidos_bloqueados,tarjetas                   motivos: rechazada_con_fundamento
+cuenta.suprimir                      supresion       recurso: id del cliente                           claves: consentimientos,pedidos_bloqueados,tarjetas,tokens_pasarela motivos: -
+roles.crear_cuenta                   administracion  recurso: personal:ID                              claves: rol                                           motivos: -
+roles.restablecer_clave              administracion  recurso: personal:ID                              claves: sesiones                                      motivos: -
+auditoria.consultar                  administracion  recurso: —                                        claves: filas,filtros,motivo                          motivos: -
+auditoria.purgar                     administracion  recurso: —                                        claves: alertas,filas,hasta_id,ultimo_hash            motivos: -
+auditoria.anclar                     administracion  recurso: —                                        claves: ultimo_id                                     motivos: -
+auditoria.verificar_anclas           seguridad       recurso: —                                        claves: anclas,error_en                               motivos: -
+alertas.generar                      seguridad       recurso: id de la alerta                          claves: regla,severidad                               motivos: -
+alertas.avisar                       seguridad       recurso: id de la alerta                          claves: destino                                       motivos: -
+alertas.estado                       seguridad       recurso: id de la alerta                          claves: estado                                        motivos: -
+incidentes.registrar                 seguridad       recurso: código INC                               claves: alerta,severidad                              motivos: -
+incidentes.fase                      seguridad       recurso: código INC                               claves: fase                                          motivos: -
+incidentes.evaluar                   seguridad       recurso: código INC                               claves: agencia,titulares                             motivos: -
+incidentes.notificar                 seguridad       recurso: código INC                               claves: -                                             motivos: -
+incidentes.cerrar                    seguridad       recurso: código INC                               claves: -                                             motivos: -
+incidentes.comprobar_recuperacion    seguridad       recurso: —                                        claves: listo                                         motivos: -
+incidentes.reconstruir               seguridad       recurso: código INC                               claves: actor,eventos,recursos                        motivos: -
+incidentes.purgar_evidencia          seguridad       recurso: —                                        claves: carpetas                                      motivos: -
+contencion.revocar_sesiones          seguridad       recurso: cuenta o 'todas'                         claves: sesiones                                      motivos: -
+contencion.deshabilitar_cuenta       seguridad       recurso: cuenta                                   claves: incidente,sesiones                            motivos: -
+contencion.habilitar_cuenta          seguridad       recurso: cuenta                                   claves: incidente                                     motivos: -
+contencion.suspender_permiso         seguridad       recurso: permiso                                  claves: incidente                                     motivos: -
+contencion.reactivar_permiso         seguridad       recurso: permiso                                  claves: incidente                                     motivos: -
+contencion.preservar_evidencia       seguridad       recurso: código INC                               claves: sha256                                        motivos: -
+contencion.recifrar_datos            seguridad       recurso: —                                        claves: valores,version                               motivos: -
+alertas.gestionar                    seguridad       recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+analitica.leer_seudonimizada         modificacion    recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+auditoria.leer                       administracion  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+auditoria.resumen                    administracion  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+auditoria.verificar                  administracion  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+boletin.enviar                       modificacion    recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+compra.tarjeta_guardada              modificacion    recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+consentimiento.gestionar             consentimiento  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+consentimiento.textos.publicar       consentimiento  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+contacto.cliente.leer                acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+contacto.invitado.leer               acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+contencion.ejecutar                  seguridad       recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+cuenta.eliminar                      supresion       recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+cuenta.propia.leer                   acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+derechos.gestionar                   derechos        recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+despacho.direccion.leer              acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+encuesta.enviar                      acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+incidentes.gestionar                 seguridad       recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+pedidos.estado.actualizar            modificacion    recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+pedidos.propios.leer                 acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+pedidos.resumen.leer                 acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+reportes.leer                        acceso          recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+retencion.ejecutar                   administracion  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+roles.gestionar                      administracion  recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion
+tarjeta.registrar                    modificacion    recurso: id o código del recurso, si aplica       claves: motivo,tras                                   motivos: error,regla_negocio,validacion

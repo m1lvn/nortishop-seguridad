@@ -353,7 +353,7 @@ class PruebasAuditoria(Base5):
         for esperado in [("consentimiento.otorgar", "consentimiento"), ("consentimiento.revocar", "consentimiento"),
                          ("derechos.solicitar", "derechos"), ("derechos.exportar", "exportacion"),
                          ("auth.login", "autenticacion"), ("roles.crear_cuenta", "administracion"),
-                         ("cuenta.registrar", "modificacion")]:
+                         ("cuenta.registrar", "creacion")]:          # Actividad 7: categoría propia
             self.assertIn(esperado, categorias)
         texto = json.dumps(eventos, ensure_ascii=False)
         for prohibido in ["ana@prueba.cl", "prueba.cl", "+56 9", "Av. Los Leones", CLAVE, "clave_incorrecta_9",
@@ -394,10 +394,10 @@ class PruebasAuditoria(Base5):
         ultimo = self.auditoria_completa()[-1]
         self.assertEqual((ultimo["canal"], ultimo["origen"]), ("api", "200.14.85.0/24"))
 
-    def test_A05_solo_administrador_y_seguridad_leen_la_bitacora(self):
+    def test_A05_solo_seguridad_lee_la_bitacora(self):
+        # Actividad 7: el administrador dejó de leer la bitácora (ve solo un resumen por categoría)
         self.assertTrue(ns.leer_auditoria(self.seguridad))
-        self.assertTrue(ns.leer_auditoria(self.admin))
-        for s in (self.privacidad, self.marketing, self.soporte, self.logistica, self.ana):
+        for s in (self.admin, self.privacidad, self.marketing, self.soporte, self.logistica, self.ana):
             with self.assertRaises(AccesoDenegado):
                 ns.leer_auditoria(s)
         with self.assertRaises(AccesoDenegado):
@@ -417,7 +417,7 @@ class PruebaPurgaAuditoria(unittest.TestCase):
             db.crear_tablas()
             auditoria._ahora = lambda: "2023-03-01 10:00:00"
             for _ in range(4):
-                auditoria.registrar_evento(None, "sistema.prueba", None, "exito")
+                auditoria.registrar_evento(None, "auditoria.anclar", None, "exito")
             auditoria._ahora = original_ahora
             ns.crear_primer_admin("admin_norti", "Adm!nPanel2026")
             admin = ns.login_admin("admin_norti", "Adm!nPanel2026")
@@ -426,7 +426,7 @@ class PruebaPurgaAuditoria(unittest.TestCase):
             self.assertEqual(ns.purgar_auditoria(seguridad), 4)
             self.assertTrue(auditoria.verificar_cadena()["ok"])
             with open(ruta, "rb") as f:                              # secure_delete: no quedan restos en el archivo
-                self.assertNotIn(b"sistema.prueba", f.read())
+                self.assertNotIn(b"auditoria.anclar", f.read())
             con = db.conectar()
             with self.assertRaises(sqlite3.DatabaseError):
                 con.execute("DELETE FROM auditoria")                 # lo reciente sigue protegido
@@ -592,7 +592,9 @@ class PruebasElusion(Base5):
         self.assertEqual(self.api("POST", "/api/v1/contencion", token=t,
                                   json={"accion": "revocar_sesiones", "objetivo": "todas"}).status_code, 403)
         t = self.token(usuario="seba_seguridad", password=CLAVE)
-        self.assertEqual(self.api("GET", "/api/v1/auditoria", token=t).status_code, 200)
+        # Actividad 7: la consulta de la bitácora exige un motivo
+        self.assertEqual(self.api("GET", "/api/v1/auditoria", token=t).status_code, 400)
+        self.assertEqual(self.api("GET", "/api/v1/auditoria?motivo=revision_periodica", token=t).status_code, 200)
 
     def test_W04_asignacion_masiva_en_rectificacion(self):
         t = self.token(correo="ana@prueba.cl", password=CLAVE)

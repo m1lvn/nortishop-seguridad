@@ -5,3 +5,5 @@ __pycache__/
 .venv/
 # copias de la base preservadas como evidencia de un incidente (contienen datos cifrados)
 evidencia_incidentes/
+# anclas externas de la bitácora (en producción, en otro servidor)
+anclas_auditoria.jsonl

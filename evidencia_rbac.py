@@ -65,7 +65,8 @@ for f in ns.leer_analitica(marketing):
     print(f"== marketing -> leer_analitica: {corto(f['seudonimo'], 18)} {f['datos']}")
 ns.leer_analitica(marketing)
 print("== auditoria:")
-for a in ns.leer_auditoria(admin):
+ns.crear_admin(admin, "seba_seguridad", "Clave#Segura1", "seguridad")     # Actividad 7: solo seguridad lee la bitácora
+for a in ns.leer_auditoria(ns.login_admin("seba_seguridad", "Clave#Segura1")):
     if a["resultado"] in ("permitido", "denegado") and a["permiso"] != "roles.gestionar":   # solo controles RBAC
         print("  ", a["rol"], a["permiso"], a["recurso"], a["resultado"])
 os.remove(ruta)

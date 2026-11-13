@@ -6,47 +6,39 @@
 #   - Nunca se registran contraseñas, códigos de verificación, tokens, llaves ni valores de campos:
 #     solo ids internos, códigos de operación y nombres de campos.
 #   - El canal (web/api/sistema) y la IP truncada los fija la capa web con fijar_contexto.
+#   - Actividad 7: cada código debe estar en catalogo_eventos (categoría, recurso y claves del detalle);
+#     un detalle o recurso que no cumple el catálogo se reemplaza por una marca, sin perder el evento.
+#     La hora sale de reloj.py y el último id/hash se puede copiar fuera de la base (anclas).
 
+import os
+import json
 import hmac
+import stat
 import hashlib
+import logging
 import ipaddress
 from contextvars import ContextVar
-from datetime import datetime, timezone
 
 import db
+import reloj
+import catalogo_eventos
 from config import LLAVE_AUDITORIA
 
 GENESIS = "0" * 64
 DIAS_CONSERVACION = 730
+RUTA_ANCLAS = os.getenv("NORTISHOP_RUTA_ANCLAS", "anclas_auditoria.jsonl")
+DETALLE_RECHAZADO = "detalle_rechazado"
+RECURSO_RECHAZADO = "recurso_rechazado"
+
+_log = logging.getLogger("nortishop.auditoria")
 
 _contexto = ContextVar("contexto_auditoria", default=("sistema", None))
 
-# prefijo de la operación -> categoría del evento
-_CATEGORIAS = [
-    ("auth.", "autenticacion"),
-    ("sesion.", "autenticacion"),
-    ("consentimiento.", "consentimiento"),
-    ("derechos.exportar", "exportacion"),
-    ("derechos.suprimir", "supresion"),
-    ("cuenta.eliminar", "supresion"),
-    ("cuenta.suprimir", "supresion"),
-    ("derechos.rectificar", "modificacion"),
-    ("derechos.", "derechos"),
-    ("encuesta.", "acceso"),            # Actividad 6: lectura de correos para la encuesta
-    ("roles.", "administracion"),
-    ("retencion.", "administracion"),
-    ("auditoria.", "administracion"),
-    ("alertas.", "seguridad"),
-    ("incidentes.", "seguridad"),
-    ("contencion.", "seguridad"),
-]
-
-
 def categoria_de(permiso):
-    for prefijo, categoria in _CATEGORIAS:
-        if permiso.startswith(prefijo):
-            return categoria
-    return "acceso" if permiso.endswith(".leer") else "modificacion"
+    evento = catalogo_eventos.buscar(permiso)
+    if evento is None:
+        raise ValueError(f"Evento no catalogado: {permiso}")
+    return evento.categoria
 
 
 def truncar_ip(ip):
@@ -69,7 +61,7 @@ def restaurar_contexto(token):
 
 
 def _ahora():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return reloj.ahora()
 
 
 _CAMPOS = ("fecha", "actor_tipo", "actor_id", "rol", "permiso", "categoria", "recurso", "resultado",
@@ -87,6 +79,15 @@ def registrar_evento(sesion, permiso, recurso=None, resultado="exito", detalle=N
     BEGIN IMMEDIATE toma el bloqueo de escritura antes de leer el último hash, así dos
     procesos no pueden encadenar dos filas al mismo eslabón.
     """
+    evento = catalogo_eventos.buscar(permiso)
+    if evento is None:
+        raise ValueError(f"Evento no catalogado: {permiso}")      # error de programación: se agrega al catálogo
+    if not catalogo_eventos.detalle_valido(evento, detalle):
+        _log.warning(f"detalle descartado en {permiso}")          # no se escribe el contenido
+        detalle = DETALLE_RECHAZADO
+    if not catalogo_eventos.recurso_valido(recurso):
+        _log.warning(f"recurso descartado en {permiso}")
+        recurso = RECURSO_RECHAZADO
     canal, origen = _contexto.get()
     fila = {
         "fecha": _ahora(),
@@ -94,7 +95,7 @@ def registrar_evento(sesion, permiso, recurso=None, resultado="exito", detalle=N
         "actor_id": getattr(sesion, "id", None),
         "rol": getattr(sesion, "rol", None),
         "permiso": permiso,
-        "categoria": categoria_de(permiso),
+        "categoria": evento.categoria,
         "recurso": None if recurso is None else str(recurso),
         "resultado": resultado,
         "canal": canal,
@@ -151,6 +152,49 @@ def ancla():
     f = con.execute("SELECT id, hash FROM auditoria ORDER BY id DESC LIMIT 1").fetchone()
     con.close()
     return (f["id"], f["hash"]) if f else (0, GENESIS)
+
+
+def anclar():
+    """
+    Agrega el último (id, hash) al archivo de anclas, fuera de la base. En producción ese archivo va a otro
+    servidor o a un almacenamiento de solo agregar; si alguien borra las últimas filas de la bitácora y
+    rehace la cadena desde ahí, el ancla ya no cuadra. Lo ejecuta una tarea programada (cada hora).
+    """
+    ultimo_id, ultimo_hash = ancla()
+    nuevo = not os.path.exists(RUTA_ANCLAS)
+    with open(RUTA_ANCLAS, "a") as f:
+        f.write(json.dumps({"fecha": _ahora(), "ultimo_id": ultimo_id, "hash": ultimo_hash}) + "\n")
+    if nuevo:
+        os.chmod(RUTA_ANCLAS, stat.S_IRUSR | stat.S_IWUSR)
+    registrar_evento(None, "auditoria.anclar", None, "exito", f"ultimo_id={ultimo_id}")
+    return ultimo_id, ultimo_hash
+
+
+def verificar_anclas():
+    """
+    Cada ancla debe seguir en la bitácora con el mismo hash, salvo que una purga registrada la haya
+    eliminado por plazo. Detecta que se borraron o reescribieron filas, incluidas las últimas.
+    """
+    if not os.path.exists(RUTA_ANCLAS):
+        return {"ok": True, "anclas": 0, "error_en": None}
+    with open(RUTA_ANCLAS) as f:
+        anclas = [json.loads(linea) for linea in f if linea.strip()]
+    con = db.conectar()
+    purgado_hasta = 0
+    for p in con.execute("SELECT detalle FROM auditoria WHERE permiso='auditoria.purgar' AND resultado='exito'"):
+        for parte in (p["detalle"] or "").split():
+            if parte.startswith("hasta_id="):
+                purgado_hasta = max(purgado_hasta, int(parte.split("=", 1)[1]))
+    error_en = None
+    for a in anclas:
+        if a["ultimo_id"] == 0:
+            continue
+        f = con.execute("SELECT hash FROM auditoria WHERE id=?", (a["ultimo_id"],)).fetchone()
+        if (f is None and a["ultimo_id"] > purgado_hasta) or (f is not None and f["hash"] != a["hash"]):
+            error_en = a["ultimo_id"]
+            break
+    con.close()
+    return {"ok": error_en is None, "anclas": len(anclas), "error_en": error_en}
 
 
 def purgar_vencidos(dias=DIAS_CONSERVACION):

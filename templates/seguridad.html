@@ -3,8 +3,8 @@
 {% block contenido %}
 <h1>Seguridad: auditoría, alertas e incidentes</h1>
 <p class="aviso {{ '' if integridad.ok else 'error' }}">Integridad de la bitácora:
-  {% if integridad.ok %}<span class="ok">correcta</span> ({{ integridad.filas }} registros, cadena HMAC verificada)
-  {% else %}<span class="mal">ROTA desde el registro {{ integridad.error_en }}</span>. Se generó una alerta crítica.{% endif %}</p>
+  {% if integridad.ok %}<span class="ok">correcta</span> ({{ integridad.filas }} registros, cadena HMAC verificada{% if integridad.anclas.anclas %} y {{ integridad.anclas.anclas }} anclas externas coinciden{% endif %})
+  {% else %}<span class="mal">ROTA{% if integridad.error_en %} desde el registro {{ integridad.error_en }}{% endif %}{% if not integridad.anclas.ok %} (no coincide con el ancla externa del registro {{ integridad.anclas.error_en }}){% endif %}</span>. Se generó una alerta crítica.{% endif %}</p>
 
 <h2>Alertas</h2>
 <div class="tabla"><table>
@@ -51,7 +51,8 @@
 </form>
 
 <h2>Últimos eventos de auditoría</h2>
-<p>Últimos 15 eventos, solo lectura. Esta consulta también queda registrada (la bitácora completa está en la API <span class="mono">/api/v1/auditoria</span>).</p>
+<p>Últimos 15 eventos, solo lectura. Esta consulta también queda registrada. Para buscar en la bitácora completa
+use <a href="{{ url_for('bitacora') }}">Consultar la bitácora</a> (exige motivo).</p>
 <div class="tabla"><table class="compacta">
   <tr><th>#</th><th>Fecha</th><th>Actor</th><th>Rol</th><th>Operación</th><th>Categoría</th><th>Recurso</th><th>Resultado</th><th>Canal</th><th>Origen</th><th>Detalle</th></tr>
   {% for e in eventos|reverse %}

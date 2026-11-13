@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Reconstrucción {{ r.incidente }}{% endblock %}
+{% block contenido %}
+<h1>Reconstrucción del incidente <span class="mono">{{ r.incidente }}</span></h1>
+<p class="aviso {{ '' if r.confiable else 'error' }}">Bitácora:
+  {% if r.confiable %}<span class="ok">íntegra</span> (cadena HMAC y {{ r.integridad.anclas.anclas }} anclas externas verificadas)
+  {% else %}<span class="mal">NO íntegra</span>: la reconstrucción no sirve como prueba{% endif %}</p>
+<table>
+  <tr><th>Actor</th><td class="mono">{{ r.actor }}</td></tr>
+  <tr><th>Eventos en la ventana</th><td>{{ r.eventos }} (del {{ r.primer_evento }} al {{ r.ultimo_evento }} UTC)</td></tr>
+  <tr><th>Inicios de sesión</th><td>{% for l in r.logins %}{{ l.fecha }} · {{ l.resultado }} · {{ l.origen or "—" }}{% if l.motivo %} ({{ l.motivo }}){% endif %}<br>{% endfor %}</td></tr>
+  <tr><th>Redes de origen</th><td>{{ r.redes|join(", ") or "—" }}</td></tr>
+  <tr><th>Acceso a datos</th><td>{{ r.inicio_acceso_datos or "—" }} a {{ r.fin_acceso_datos or "—" }} UTC</td></tr>
+  {% for p, recursos in r.accesos_efectivos.items() %}
+  <tr><th>Accesos efectivos · {{ p }}</th><td>{{ recursos|length }}: <span class="mono">{{ recursos|join(", ") }}</span></td></tr>
+  {% endfor %}
+  {% for p, recursos in r.denegados.items() %}
+  <tr><th>Denegados · {{ p }}</th><td class="mono">{% for x in recursos %}{{ x if x is not none else "sin recurso" }}{{ ", " if not loop.last }}{% endfor %}</td></tr>
+  {% endfor %}
+  <tr><th>Categorías de datos vistas</th><td>{{ r.categorias_datos|join(", ") or "ninguna" }}</td></tr>
+  <tr><th>Titulares distintos</th><td>{{ r.titulares|length }}</td></tr>
+</table>
+<p>Estos valores alimentan la "Evaluación de alcance" del incidente. Los titulares se identifican solo por id interno.</p>
+<h2>Línea de tiempo</h2>
+<div class="tabla"><table class="compacta">
+  <tr><th>#</th><th>Fecha (UTC)</th><th>Operación</th><th>Recurso</th><th>Resultado</th><th>Origen</th><th>Detalle</th></tr>
+  {% for e in r.linea_de_tiempo %}
+  <tr><td>{{ e.id }}</td><td>{{ e.fecha }}</td><td>{{ e.permiso }}</td><td>{{ e.recurso or "—" }}</td><td>{{ e.resultado }}</td>
+    <td>{{ e.origen or "—" }}</td><td>{{ e.detalle or "" }}</td></tr>
+  {% endfor %}
+</table></div>
+<p><a href="{{ url_for('ver_incidente', codigo=r.incidente) }}">Volver al incidente</a></p>
+{% endblock %}
