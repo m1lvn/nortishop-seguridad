@@ -5,6 +5,7 @@ Implementación en Python de los controles de protección de datos del caso Nort
 - **Actividad 4:** minimización, seudonimización, anonimización y RBAC.
 - **Actividad 5:** consentimiento por finalidad, ejercicio de derechos, auditoría protegida y respuesta a incidentes, con una interfaz web y una API.
 - **Actividad 6:** mecanismos de derechos completos: canal y modelo de seguimiento, verificación de identidad, acceso y portabilidad, rectificación con registro del cambio, supresión con acta (eliminado / bloqueado por ley / propagado), oposición y bloqueo temporal.
+- **Actividad 7:** trazabilidad y plan de respuesta: catálogo de eventos auditados, auditoría de compras/retención/fallos después de autorizar, consulta de la bitácora con motivo, anclas externas, plazos de conservación, cuatro alertas de acceso anómalo propias de NortiShop, aviso a la guardia, reconstrucción de incidentes y un simulacro.
 
 **Ramo:** Seguridad y Protección de Datos – Universidad del Desarrollo
 **Integrantes:** Ignacia Castillo, Milan Kurte, Francisco Polo
@@ -50,6 +51,17 @@ Detalles del cifrado:
 | Oposición | Nuevo tratamiento `encuesta_satisfaccion` (interés legítimo, art. 8 a). La oposición exige motivo; privacidad la acoge o la rechaza con motivos imperiosos. Acogida, el titular sale de `correos_para_encuesta`. |
 | Bloqueo | Art. 8 ter: asociado a una rectificación, supresión u oposición en curso. Mientras está vigente se suspenden boletín, analítica, ofertas, encuesta y consultas de soporte; los datos solo se almacenan. Se levanta solo al cerrarse la solicitud asociada. |
 
+## Actividad 7: trazabilidad y plan de respuesta
+
+| Pauta | Implementación |
+|---|---|
+| Eventos y campos | `catalogo_eventos.py`: 49 eventos explícitos + uno de control de acceso por cada permiso (74 en total), con categoría, recurso y claves permitidas del detalle. `registrar_evento` rechaza un código no catalogado y reemplaza por `detalle_rechazado` un detalle con valores que no cumplen el catálogo (sin espacios ni `@`). |
+| Registro sin los datos | Nuevos eventos `pedido.crear` (también las compras de invitados), `pedido.estado`, `retencion.aplicar`, `analitica.guardar`, `roles.restablecer_clave`, `alertas.estado`. `@requiere_permiso` registra además cuando una operación autorizada falla después (`tras=<id> motivo=regla_negocio`). |
+| Protección y conservación | Solo `seguridad` lee la bitácora (`trazabilidad.consultar`, con **motivo** obligatorio: `INC-…`, `ALERTA-N` o un motivo general); el administrador ve solo un resumen por categoría. Anclas externas (`auditoria.anclar` / `verificar_anclas`) detectan que se borró el final. Plazos: bitácora y alertas descartadas 2 años, evidencia de incidentes 1 año desde el cierre (`incidentes.purgar_evidencia`), registro de incidentes 5 años. |
+| Alertas propias | `fuera_de_horario`, `red_nueva_personal`, `lectura_secuencial` y `direcciones_historicas` (además de las 8 de la Actividad 5). Las ventanas se miden desde la fecha del evento (`reloj.py`). Las alertas altas y críticas avisan a la guardia sin incluir la descripción. |
+| Reconstrucción | `trazabilidad.reconstruir`: línea de tiempo de un actor, accesos efectivos (descuenta los negados después), redes, categorías de datos y titulares, tras verificar cadena y anclas. Web: `/seguridad/bitacora` y `/seguridad/incidentes/<código>/reconstruccion`. |
+| Simulacro | `simulacro_act7.py`: credenciales de soporte robadas, acceso a las 03:07; compara la reconstrucción con lo ocurrido, comprueba que la bitácora no contiene los datos y que recortarla se detecta. |
+
 ## Requisitos
 - Python 3.10 o superior
 - Dependencias: `pip install -r requirements.txt` (se recomienda un entorno virtual: `python -m venv .venv`)
@@ -57,10 +69,11 @@ Detalles del cifrado:
 ## Cómo ejecutar
 ```
 python generar_llaves.py                       # 1. crea el .env (o agrega las llaves que falten)
-python -m unittest pruebas_seguridad pruebas_actividad5 pruebas_actividad6 -v   # 2. pruebas (base temporal)
+python -m unittest pruebas_seguridad pruebas_actividad5 pruebas_actividad6 pruebas_actividad7 -v   # 2. pruebas (base temporal)
 python demo.py                                 # 3. demo de las actividades 2 y 4 (recrea nortishop.db)
 python evidencia_act5.py                       # 4. evidencia de la actividad 5 (base temporal)
 python evidencia_act6.py                       #    evidencia de la actividad 6 (base temporal)
+python simulacro_act7.py                       #    simulacro de incidente de la actividad 7 (base temporal)
 python ver_bd.py                               # 5. base de datos en crudo
 python verificar_secretos.py                   # 6. llaves no expuestas, base sin datos en claro, bitácora íntegra
 ```
@@ -81,6 +94,7 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 | `NORTISHOP_RUTA_BD` | Ruta de la base de datos SQLite |
 | `NORTISHOP_MODO_DEMO` | `1` muestra el buzón simulado en la web (solo demostración) |
 | `NORTISHOP_DIR_EVIDENCIA` | Carpeta de las copias preservadas en incidentes (por defecto `evidencia_incidentes/`) |
+| `NORTISHOP_RUTA_ANCLAS` | Archivo de anclas externas de la bitácora (por defecto `anclas_auditoria.jsonl`; en producción, en otro servidor) |
 
 `.env.example` tiene los nombres sin valores reales. El `.env` lo crea `generar_llaves.py` con permisos 600.
 
@@ -93,6 +107,7 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 | `nortishop.py` | Funciones del sistema: registro, login con bloqueo, compras, despacho, boletín, retención, supresión |
 | `rbac.py` | Roles, permisos, `@requiere_permiso` y filtro de logs |
 | `consentimiento.py`, `derechos.py`, `auditoria.py`, `deteccion.py`, `incidentes.py`, `sesiones.py`, `notificador.py` | Módulos de la Actividad 5 (ver tabla anterior) |
+| `catalogo_eventos.py`, `trazabilidad.py`, `reloj.py` | Módulos de la Actividad 7 (ver tabla anterior) |
 | `app.py`, `templates/`, `static/` | Interfaz web y API JSON |
 | `pasarela_simulada.py` | Simula la pasarela de pago: tokeniza, firma sus respuestas y borra tokens |
 | `generar_llaves.py` | Genera las llaves de 256 bits (y la versión nueva con `--rotar`) |
@@ -100,6 +115,8 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 | `pruebas_seguridad.py` | 26 pruebas de la Actividad 4 |
 | `pruebas_actividad5.py` | 47 pruebas de la Actividad 5: consentimiento (C), derechos (D), auditoría (A), incidentes (I) e intentos de elusión (W) |
 | `pruebas_actividad6.py` | 19 pruebas de la Actividad 6, una o más solicitudes concretas por mecanismo (R1 canal, R2 verificación y no verificados, R3 acceso/portabilidad, R4 rectificación, R5 supresión, R6 oposición y bloqueo) |
+| `pruebas_actividad7.py` | 19 pruebas de la Actividad 7: catálogo (E), protección y conservación (P), alertas (L), reconstrucción (R) y simulacro (S) |
+| `simulacro_act7.py` | Simulacro de incidente: genera `evidencia/ev_act7_simulacro.txt` y `ev_act7_reconstruccion.json` |
 | `demo.py`, `evidencia_rbac.py` | Demostraciones de las actividades 2 y 4 |
 | `evidencia_act5.py` | Genera la evidencia de la Actividad 5 en `evidencia/ev_act5_*.txt` |
 | `evidencia_act6.py` | Genera la evidencia de la Actividad 6 en `evidencia/ev_act6_*.txt` y `.json` |
@@ -115,6 +132,7 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 - [`docs/Informe Técnico Nortishop.pdf`](docs/Informe%20Técnico%20Nortishop.pdf) – Actividad 4: rediseño, seudonimización, anonimización y RBAC.
 - [`docs/Actividad5_NortiShop.pdf`](docs/Actividad5_NortiShop.pdf) – Actividad 5: consentimiento, derechos, auditoría, plan de respuesta a incidentes e implementación.
 - [`docs/Actividad6_NortiShop.pdf`](docs/Actividad6_NortiShop.pdf) – Actividad 6: mecanismos de derechos (canal, verificación, acceso, portabilidad, rectificación, supresión, oposición y bloqueo).
+- [`docs/Actividad7_NortiShop.pdf`](docs/Actividad7_NortiShop.pdf) – Actividad 7: trazabilidad y plan de respuesta a incidentes.
 
 ## Evidencia
 - `ev_demo.txt`, `ev_bd.txt`, `ev_secretos.txt`, `ev_git.txt` y `cap_*.png` (sin `act5`): figuras del informe de la Actividad 2.
@@ -124,5 +142,7 @@ NORTISHOP_MODO_DEMO=1 flask --app app run      # http://localhost:5000  (persona
 - `cap_act6_*.png`: capturas de la web de la Actividad 6 (formularios, verificación, bloqueo, bandeja de privacidad, oposición acogida y supresión con acta).
 - `cap_act5_*.png`: capturas de la aplicación web, en el orden del recorrido (registro, consentimientos, derechos, privacidad, seguridad y contención).
 
-El archivo `.env`, la base de datos `nortishop.db` y la carpeta `evidencia_incidentes/` NO se incluyen en el repositorio.
+- `ev_act7_simulacro.txt` y `ev_act7_reconstruccion.json`: salida del simulacro; `ev_act7_catalogo.txt`: catálogo de eventos; `ev_act7_pruebas.txt`: las 111 pruebas (`-v`); `cap_act7_*.png`: capturas (resumen del administrador, panel de seguridad, consulta con motivo, reconstrucción e incidente).
+
+El archivo `.env`, las anclas `anclas_auditoria.jsonl`, la base de datos `nortishop.db` y la carpeta `evidencia_incidentes/` NO se incluyen en el repositorio.
 Todos los datos de las demos son ficticios.
